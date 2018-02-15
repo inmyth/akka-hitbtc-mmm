@@ -6,6 +6,7 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
+import com.mbcu.hitbtc.mmm.actors.WsActor.WsConnected
 import com.mbcu.hitbtc.mmm.models.internal.Config
 
 object MainActor {
@@ -36,8 +37,18 @@ class MainActor(configPath : String) extends Actor{
       wsActor.map(_ ! "start")
     }
 
-    case WsActor.WsConnected => {
-      println("MainActor got ws connected")
+    case WsConnected => {
+      config match {
+        case Some(c) => {
+          c.bots.foreach(b => {
+            println(b)
+          })
+        }
+        case None => {
+          println("config empty")
+          context.system.terminate()
+        }
+      }
 
 
     }
