@@ -27,7 +27,6 @@ class MainActor(configPath : String) extends Actor{
 
     case "start" => {
         val fileActor = context.actorOf(Props(new FileActor(configPath)))
-        implicit val timeout = Timeout(25 seconds)
         val fileF = fileActor ! "start"
     }
 

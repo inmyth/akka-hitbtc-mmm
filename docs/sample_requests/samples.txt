@@ -1,0 +1,35 @@
+{
+  "method": "login",
+  "params": {
+    "algo": "HS256",
+    "pKey": "fd5f0aa793405f356beba728170e7a13",
+    "nonce": "abcabc",
+    "signature": ""
+  }
+}
+{"jsonrpc":"2.0","result":true,"id":null}
+##
+{
+  "method": "subscribeReports",
+  "params": {}
+}
+
+{"jsonrpc":"2.0","result":true,"id":null}
+
+{"jsonrpc":"2.0","method":"activeOrders","params":[{"id":"17626743960","clientOrderId":"client123456","symbol":"XRPBTC","side":"sell","status":"new","type":"limit","timeInForce":"GTC","quantity":"1","price":"0.10000000","cumQuantity":"0","createdAt":"2018-02-17T03:14:42.743Z","updatedAt":"2018-02-17T03:14:42.743Z","reportType":"status"},{"id":"17623980170","clientOrderId":"3f494796175b45b0b0ebae048543460b","symbol":"XRPBTC","side":"sell","status":"new","type":"limit","timeInForce":"GTC","quantity":"1","price":"0.10000000","cumQuantity":"0","createdAt":"2018-02-17T02:50:25.012Z","updatedAt":"2018-02-17T02:50:25.012Z","reportType":"status"}]}
+
+{"jsonrpc":"2.0","method":"report","params":{"id":"17745489977","clientOrderId":"54020319f105480791e59dc5919e2cdf","symbol":"XRPBTC","side":"sell","status":"new","type":"limit","timeInForce":"GTC","quantity":"1","price":"2.00000000","cumQuantity":"0","createdAt":"2018-02-17T21:08:01.983Z","updatedAt":"2018-02-17T21:08:01.983Z","reportType":"new"}}
+
+
+##
+{
+  "method": "newOrder",
+  "params": {
+    "clientOrderId": "client123456",
+    "symbol": "XRPBTC",
+    "side": "sell",
+    "price": "0.1",
+    "quantity": "1"
+  },
+  "id": 12345678
+}

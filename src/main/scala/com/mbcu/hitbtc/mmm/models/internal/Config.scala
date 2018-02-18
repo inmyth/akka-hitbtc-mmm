@@ -3,7 +3,7 @@ package com.mbcu.hitbtc.mmm.models.internal
 import play.api.libs.json.Json
 
 
-case class Credentials (api : String, secret : String)
+case class Credentials (api : String, nonce: String, sign : String)
 object Credentials {
   implicit val jsonFormat = Json.format[Credentials]
 
