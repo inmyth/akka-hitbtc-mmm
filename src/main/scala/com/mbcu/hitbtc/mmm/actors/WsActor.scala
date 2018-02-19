@@ -5,24 +5,28 @@ import java.util
 import akka.actor.{Actor, ActorRef, Props}
 import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSocketState}
 import akka.event.{EventBus, SubchannelClassification}
-import com.mbcu.hitbtc.mmm.actors.WsActor.WsConnected
+import com.mbcu.hitbtc.mmm.actors.WsActor.{SendSync, WsConnected}
 import com.neovisionaries.ws.client
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpVersion
 import io.vertx.scala.core.Vertx
 import io.vertx.scala.core.http.{HttpClientOptions, WebSocket}
 import io.vertx.scala.core.http.HttpClientOptions
+import play.api.libs.json.{JsValue, Json}
 
 object WsActor {
   def props(url : String): Props = Props(new WsActor(url))
 
   case class WsConnected()
 
+  case class SendSync(str : JsValue)
+
+
 }
 
 class WsActor(url: String) extends Actor {
 
-
+private var ws : Option[com.neovisionaries.ws.client.WebSocket] = None
 //  var ws: Option[WebSocket] = None
   var actorSender: Option[ActorRef] = None
 //  var opts = HttpClientOptions()
@@ -37,9 +41,11 @@ class WsActor(url: String) extends Actor {
     case "start" => {
         actorSender = Some(sender)
         val factory = new WebSocketFactory
-        val ws = factory.createSocket(url)
-        ws.addListener(ScalaWebSocketListener)
-        ws.connect()
+        val websocket = factory.createSocket(url)
+        websocket.addListener(ScalaWebSocketListener)
+        websocket.connect()
+        ws = Some(websocket)
+
 
 
       //  /api/2/ws
@@ -59,6 +65,19 @@ class WsActor(url: String) extends Actor {
 //      ws.get.writeFinalTextFrame("a")
 
     }
+
+
+
+    case SendSync(jsValue) => {
+      val str = Json.stringify(jsValue)
+      ws match {
+
+        case Some(webSocket) => webSocket.sendText(str)
+        case _ => println("WS Actor SendSync No Websocket")
+      }
+
+    }
+
 
 
 

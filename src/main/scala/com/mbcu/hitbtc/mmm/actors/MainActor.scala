@@ -23,11 +23,15 @@ class MainActor(configPath : String) extends Actor{
 
   implicit val ec = global
 
+  val initDone : Boolean = false
+
   override def receive: Receive = {
+
+
 
     case "start" => {
         val fileActor = context.actorOf(Props(new FileActor(configPath)))
-        val fileF = fileActor ! "start"
+        fileActor ! "start"
     }
 
     case ConfigInitiated(cfg) => {
@@ -37,17 +41,31 @@ class MainActor(configPath : String) extends Actor{
     }
 
     case WsConnected => {
-      config match {
-        case Some(c) => {
-          c.bots.foreach(b => {
-            println(b)
+      wsActor match {
+        case Some(ws) => {
+          config.map(cfg => {
+
+            val prepOpActor = context.actorOf(Props(new PreOpActor(cfg, ws)))
+            prepOpActor ! "start"
           })
+
         }
-        case None => {
-          println("config empty")
-          context.system.terminate()
-        }
+
+        case None => println("MainActor : no wsActor")
       }
+
+
+      //      config match {
+//        case Some(c) => {
+//          c.bots.foreach(b => {
+//            println(b)
+//          })
+//        }
+//        case None => {
+//          println("config empty")
+//          context.system.terminate()
+//        }
+//      }
 
 
     }
