@@ -1,21 +1,24 @@
 package com.mbcu.hitbtc.mmm.actors
 
 import akka.actor.{Actor, Props}
-import com.mbcu.hitbtc.mmm.actors.ParserActor.GotResponse
+import com.mbcu.hitbtc.mmm.actors.ParserActor.{GotWSResponse}
 import com.mbcu.hitbtc.mmm.models.internal.Config
 
 object ParserActor {
-  def props(config: Config): Props = Props(new ParserActor(config))
+  def props(config: Option[Config]): Props = Props(new ParserActor(config))
 
-  case class GotResponse(raw : String)
+  case class GotWSResponse(raw : String)
 }
 
 
-class ParserActor(config : Config) extends Actor {
+class ParserActor(config : Option[Config]) extends Actor {
+
 
   override def receive: Receive = {
 
-    case GotResponse(raw : String) => {
+
+    case GotWSResponse(raw : String) => {
+
 
     }
   }

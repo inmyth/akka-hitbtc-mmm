@@ -5,7 +5,7 @@ import java.util
 import akka.actor.{Actor, ActorRef, Props}
 import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSocketState}
 import akka.event.{EventBus, SubchannelClassification}
-import com.mbcu.hitbtc.mmm.actors.WsActor.{SendSync, WsConnected}
+import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.neovisionaries.ws.client
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpVersion
@@ -19,85 +19,53 @@ object WsActor {
 
   case class WsConnected()
 
-  case class SendSync(str : JsValue)
+  case class SendJs(str : JsValue)
 
+  case class SetParser(parser : ActorRef)
 
+  case class WsGotText(text: String)
 }
 
 class WsActor(url: String) extends Actor {
 
 private var ws : Option[com.neovisionaries.ws.client.WebSocket] = None
-//  var ws: Option[WebSocket] = None
-  var actorSender: Option[ActorRef] = None
-//  var opts = HttpClientOptions()
-//    .setDefaultHost("api.hitbtc.com")
-//    .setDefaultPort(443)
-//    .setProtocolVersion(HttpVersion.HTTP_2)
-//    .setSsl(true)
-//  val client = Some(Vertx.vertx().createHttpClient(opts))
+private var main: Option[ActorRef] = None
 
   override def receive: Receive = {
 
     case "start" => {
-        actorSender = Some(sender)
+        main = Some(sender)
         val factory = new WebSocketFactory
         val websocket = factory.createSocket(url)
         websocket.addListener(ScalaWebSocketListener)
         websocket.connect()
         ws = Some(websocket)
-
-
-
-      //  /api/2/ws
-//      client.get.websocket("/api/2/ws", (websocket: WebSocket) => {
-//
-//        websocket.frameHandler(buffer => {
-//          println(buffer.textData())
-////         actorSender.map(_ ! buffer.textData())
-////         actorSender.get ! RippledResponse(this.handlerId.get, buffer.textData())
-//        })
-//
-//        ws = Some(websocket)
-//        ws.get.writeFinalTextFrame("aaaa")
-//      })
-
-
-//      ws.get.writeFinalTextFrame("a")
-
     }
 
-
-
-    case SendSync(jsValue) => {
+    case SendJs(jsValue) => {
       val str = Json.stringify(jsValue)
       ws match {
-
         case Some(webSocket) => webSocket.sendText(str)
         case _ => println("WS Actor SendSync No Websocket")
       }
-
     }
-
-
 
 
   }
 
   object ScalaWebSocketListener extends WebSocketListener {
 
-
-    override def onStateChanged(websocket: client.WebSocket, newState: WebSocketState): Unit = ???
-
     override def onConnected(websocket: client.WebSocket, headers: util.Map[String, util.List[String]]): Unit = {
-      println(s"connected to ", url)
-      actorSender map (_ ! WsConnected)
+      println("Connected to " + url)
+      main map (_ ! WsConnected)
     }
 
     def onTextMessage(websocket: com.neovisionaries.ws.client.WebSocket, data: String) = {
       println(data)
-      actorSender.map(_ ! data)
+      main map(_ ! WsGotText(data))
     }
 
+    override def onStateChanged(websocket: client.WebSocket, newState: WebSocketState): Unit = ???
     def handleCallbackError(x$1: com.neovisionaries.ws.client.WebSocket, x$2: Throwable): Unit = ???
     def onBinaryFrame(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketFrame): Unit = ???
     def onBinaryMessage(x$1: com.neovisionaries.ws.client.WebSocket, x$2: Array[Byte]): Unit = ???

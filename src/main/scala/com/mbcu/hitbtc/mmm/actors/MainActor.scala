@@ -6,8 +6,8 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
-import com.mbcu.hitbtc.mmm.actors.WsActor.WsConnected
-import com.mbcu.hitbtc.mmm.models.internal.Config
+import com.mbcu.hitbtc.mmm.actors.WsActor.{GotText, SendJs, WsConnected, WsGotText}
+import com.mbcu.hitbtc.mmm.models.internal.{Config, Login}
 
 object MainActor {
   def props(configPath : String): Props = Props(new MainActor(configPath))
@@ -19,15 +19,13 @@ object MainActor {
 class MainActor(configPath : String) extends Actor{
   import com.mbcu.hitbtc.mmm.actors.MainActor._
   private var config: Option[Config] = None
-  private var wsActor: Option[ActorRef] = None
-
+  private var ws: Option[ActorRef] = None
+  private var parser: Option[ActorRef] = None
   implicit val ec = global
 
   val initDone : Boolean = false
 
   override def receive: Receive = {
-
-
 
     case "start" => {
         val fileActor = context.actorOf(Props(new FileActor(configPath)))
@@ -36,38 +34,27 @@ class MainActor(configPath : String) extends Actor{
 
     case ConfigInitiated(cfg) => {
       config = Some(cfg)
-      wsActor = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws"))))
-      wsActor.map(_ ! "start")
+      ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws"))))
+      ws.map(_ ! "start")
     }
 
     case WsConnected => {
-      wsActor match {
-        case Some(ws) => {
-          config.map(cfg => {
+      parser = Some(context.actorOf(Props(new ParserActor(config))))
+      self ! "login"
+    }
 
-            val prepOpActor = context.actorOf(Props(new PreOpActor(cfg, ws)))
-            prepOpActor ! "start"
-          })
+    case "login" => {
+      config.map(c => ws.map(_ ! SendJs(Login.from(c))))
 
-        }
 
-        case None => println("MainActor : no wsActor")
+    }
+
+
+    case WsGotText(text: String) => {
+      parser match {
+        case Some(parserActor) => {parserActor ! text}
+        case _ => {println("MainActor : Parser not available")}
       }
-
-
-      //      config match {
-//        case Some(c) => {
-//          c.bots.foreach(b => {
-//            println(b)
-//          })
-//        }
-//        case None => {
-//          println("config empty")
-//          context.system.terminate()
-//        }
-//      }
-
-
     }
 
   }
