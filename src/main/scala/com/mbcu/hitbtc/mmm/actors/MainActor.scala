@@ -6,8 +6,12 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
-import com.mbcu.hitbtc.mmm.actors.WsActor.{GotText, SendJs, WsConnected, WsGotText}
-import com.mbcu.hitbtc.mmm.models.internal.{Config, Login}
+import com.mbcu.hitbtc.mmm.actors.ParserActor.{LoginSuccess, RPCFailed, SubsribeReportsSuccess}
+import com.mbcu.hitbtc.mmm.actors.WsActor._
+import com.mbcu.hitbtc.mmm.models.internal.Config
+import com.mbcu.hitbtc.mmm.models.request.{Login, SubscribeReports}
+import com.mbcu.hitbtc.mmm.models.response.RPCError
+import play.api.libs.json.Json
 
 object MainActor {
   def props(configPath : String): Props = Props(new MainActor(configPath))
@@ -44,15 +48,23 @@ class MainActor(configPath : String) extends Actor{
     }
 
     case "login" => {
-      config.map(c => ws.map(_ ! SendJs(Login.from(c))))
+      config.map(c => ws.map(_ ! SendJs(Json.toJson(Login.from(c)))))
+    }
+
+    case LoginSuccess => ws.map(_ ! SendJs(SubscribeReports.toJsValue()))
+    case SubsribeReportsSuccess => println("Subscribe Reports success")
 
 
+    case RPCFailed(id, error) => {
+      println(s"Id : ${id}, ${error}")
+      context.system.terminate()
     }
 
 
-    case WsGotText(text: String) => {
+
+    case wsGotText : WsGotText => {
       parser match {
-        case Some(parserActor) => {parserActor ! text}
+        case Some(parserActor) => parserActor ! wsGotText
         case _ => {println("MainActor : Parser not available")}
       }
     }

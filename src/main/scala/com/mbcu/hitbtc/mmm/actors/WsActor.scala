@@ -19,7 +19,7 @@ object WsActor {
 
   case class WsConnected()
 
-  case class SendJs(str : JsValue)
+  case class SendJs(jsValue: JsValue)
 
   case class SetParser(parser : ActorRef)
 
@@ -43,10 +43,11 @@ private var main: Option[ActorRef] = None
     }
 
     case SendJs(jsValue) => {
-      val str = Json.stringify(jsValue)
+      val json : String = Json.stringify(jsValue)
+
       ws match {
-        case Some(webSocket) => webSocket.sendText(str)
-        case _ => println("WS Actor SendSync No Websocket")
+        case Some(webSocket) => webSocket.sendText(json)
+        case _ => println("WS Actor Send :  No Websocket")
       }
     }
 
@@ -61,7 +62,6 @@ private var main: Option[ActorRef] = None
     }
 
     def onTextMessage(websocket: com.neovisionaries.ws.client.WebSocket, data: String) = {
-      println(data)
       main map(_ ! WsGotText(data))
     }
 

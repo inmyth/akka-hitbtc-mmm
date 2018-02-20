@@ -1,4 +1,4 @@
-package com.mbcu.hitbtc.mmm.models.internal
+package com.mbcu.hitbtc.mmm.models.response
 
 import play.api.libs.json.Json
 

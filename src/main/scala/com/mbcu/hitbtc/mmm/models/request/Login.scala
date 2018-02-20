@@ -1,6 +1,7 @@
-package com.mbcu.hitbtc.mmm.models.internal
+package com.mbcu.hitbtc.mmm.models.request
 
-import play.api.libs.json.{JsValue, Json}
+import com.mbcu.hitbtc.mmm.models.internal.{Config, Credentials}
+import play.api.libs.json.Json
 
 case class LoginParams(algo : String, pKey : String, nonce : String, signature : String)
 object LoginParams {
@@ -9,10 +10,11 @@ object LoginParams {
   def from (credentials: Credentials) : LoginParams = {
     new LoginParams("HS256", credentials.pKey, credentials.nonce, credentials.signature)
   }
+
 }
 
 
-case class Login(params : LoginParams, method : String = "login")
+case class Login(params : LoginParams, method : String = "login", id : String = "login")
 
 object Login {
   implicit val jsonFormat = Json.format[Login]
@@ -20,5 +22,6 @@ object Login {
   def from (config: Config) : Login = {
     new Login(LoginParams.from(config.credentials))
   }
+
 }
 
