@@ -5,16 +5,16 @@ import play.api.libs.json.Json
 
 class Orderbook (var pair: String, var sels : Seq[Order], var buys : Seq[Order]) extends OrderbookTrait {
 
-  override def sort: Unit = {
-    sortBuy
-    sortSel
+  override def sort(): Unit = {
+    sortBuy()
+    sortSel()
   }
 
-  override def sortBuy: Unit = {
+  override def sortBuy(): Unit = {
     buys = buys sortWith(_.price > _.price)
   }
 
-  override def sortSel: Unit = {
+  override def sortSel(): Unit = {
     sels = sels sortWith(_.price < _.price)
   }
 
@@ -29,9 +29,7 @@ class Orderbook (var pair: String, var sels : Seq[Order], var buys : Seq[Order])
   }
 
 
-
-
-  override def toString() : String = {
+  override def toString : String = {
     val builder = StringBuilder.newBuilder
 
     builder.append(s"buys : ${buys.size}")

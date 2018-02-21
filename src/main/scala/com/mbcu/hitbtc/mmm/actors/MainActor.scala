@@ -27,7 +27,7 @@ class MainActor(configPath : String) extends Actor{
   private var config: Option[Config] = None
   private var ws: Option[ActorRef] = None
   private var parser: Option[ActorRef] = None
-  private var orderbooks = scala.collection.mutable.Map[String, Orderbook]()
+  private var orderbooks = scala.collection.immutable.Map[String, Orderbook]()
   private var cancellable : Option[Cancellable] = None
   implicit val ec = global
   val initDone : Boolean = false
@@ -48,7 +48,7 @@ class MainActor(configPath : String) extends Actor{
 
     case "init trade pairs" => {
       config.foreach(_.bots foreach  (bot => {
-          orderbooks += (bot.pair -> new Orderbook(bot.pair, Seq.empty[Order], Seq.empty[Order]))
+        orderbooks = orderbooks +  (bot.pair -> new Orderbook(bot.pair, Seq.empty[Order], Seq.empty[Order]))
       }))
       val scheduleActor = context.actorOf(Props(classOf[ScheduleActor]))
       cancellable =Some(
