@@ -7,11 +7,6 @@ import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSoc
 import akka.event.{EventBus, SubchannelClassification}
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.neovisionaries.ws.client
-import io.vertx.core.buffer.Buffer
-import io.vertx.core.http.HttpVersion
-import io.vertx.scala.core.Vertx
-import io.vertx.scala.core.http.{HttpClientOptions, WebSocket}
-import io.vertx.scala.core.http.HttpClientOptions
 import play.api.libs.json.{JsValue, Json}
 
 object WsActor {

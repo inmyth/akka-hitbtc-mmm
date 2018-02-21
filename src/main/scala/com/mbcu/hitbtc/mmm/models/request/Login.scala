@@ -1,7 +1,7 @@
 package com.mbcu.hitbtc.mmm.models.request
 
 import com.mbcu.hitbtc.mmm.models.internal.{Config, Credentials}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsPath, Json, Reads}
 
 case class LoginParams(algo : String, pKey : String, nonce : String, signature : String)
 object LoginParams {

@@ -10,7 +10,7 @@ import com.mbcu.hitbtc.mmm.actors.ParserActor.{LoginSuccess, RPCFailed, Subsribe
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.{Login, SubscribeReports}
-import com.mbcu.hitbtc.mmm.models.response.RPCError
+import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
 import play.api.libs.json.Json
 
 object MainActor {
@@ -25,8 +25,8 @@ class MainActor(configPath : String) extends Actor{
   private var config: Option[Config] = None
   private var ws: Option[ActorRef] = None
   private var parser: Option[ActorRef] = None
+  private var orderbooks = scala.collection.mutable.Map[String, Option[Order]]()
   implicit val ec = global
-
   val initDone : Boolean = false
 
   override def receive: Receive = {
@@ -42,6 +42,14 @@ class MainActor(configPath : String) extends Actor{
       ws.map(_ ! "start")
     }
 
+    case "init trade pairs" => {
+      config.map(_.bots foreach  (bot => {
+          orderbooks += (bot.pair -> None)
+      }))
+
+    }
+
+
     case WsConnected => {
       parser = Some(context.actorOf(Props(new ParserActor(config))))
       self ! "login"
@@ -52,7 +60,10 @@ class MainActor(configPath : String) extends Actor{
     }
 
     case LoginSuccess => ws.map(_ ! SendJs(SubscribeReports.toJsValue()))
+
     case SubsribeReportsSuccess => println("Subscribe Reports success")
+
+
 
 
     case RPCFailed(id, error) => {
