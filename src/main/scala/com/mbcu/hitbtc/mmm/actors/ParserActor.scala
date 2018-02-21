@@ -15,7 +15,7 @@ object ParserActor {
 
   case object SubsribeReportsSuccess
 
-  case class ActiveOrders(orders : Option[List[Order]])
+  case class ActiveOrders(orders : Option[Seq[Order]])
 
   case class RPCFailed(id : String, error : String)
 
