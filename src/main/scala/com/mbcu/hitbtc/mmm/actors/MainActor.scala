@@ -59,7 +59,7 @@ class MainActor(configPath : String) extends Actor{
           "log orderbooks"))
     }
 
-    case "log orderbooks" => state map (_.logOrderbooks())
+//    case "log orderbooks" => state map (_.logOrderbooks())
 
 
     case WsConnected => {

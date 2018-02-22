@@ -8,6 +8,8 @@ import com.mbcu.hitbtc.mmm.models.request.SubscribeReports
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPC, RPCError}
 import play.api.libs.json.{JsDefined, JsValue, Json}
 
+import scala.util.Try
+
 object ParserActor {
   def props(config: Option[Config]): Props = Props(new ParserActor(config))
 
@@ -31,22 +33,24 @@ class ParserActor(config : Option[Config]) extends Actor {
       println(raw)
 
       val jsValue : JsValue = Json.parse(raw)
-      if((jsValue \ "jsonrpc").isInstanceOf[JsDefined]){
-        if ((jsValue \ "error").isInstanceOf[JsDefined]){
-          sender() ! RPCFailed((jsValue \ "id").as[String], (jsValue \ "error").toString)
-        }
-        else {
-          if((jsValue \ "method").isDefined && (jsValue \ "params").isDefined){
-            val rpc = jsValue.as[RPC]
-            if ((jsValue \ "method").as[String] == "activeOrders"){
-              sender() ! ActiveOrders(rpc.params)
-            }
+      Try {
+        if((jsValue \ "jsonrpc").isInstanceOf[JsDefined]){
+          if ((jsValue \ "error").isInstanceOf[JsDefined]){
+            sender() ! RPCFailed((jsValue \ "id").as[String], (jsValue \ "error").toString)
           }
-          else if ((jsValue \ "id").isDefined){
-            if ((jsValue \ "id").as[String] == "login"){
-              sender() ! LoginSuccess
-            } else if((jsValue \ "id").as[String] == "subscribeReports") {
-              sender() ! SubsribeReportsSuccess
+          else {
+            if((jsValue \ "method").isDefined && (jsValue \ "params").isDefined){
+              val rpc = jsValue.as[RPC]
+              if ((jsValue \ "method").as[String] == "activeOrders"){
+                sender() ! ActiveOrders(rpc.params)
+              }
+            }
+            else if ((jsValue \ "id").isDefined){
+              if ((jsValue \ "id").as[String] == "login"){
+                sender() ! LoginSuccess
+              } else if((jsValue \ "id").as[String] == "subscribeReports") {
+                sender() ! SubsribeReportsSuccess
+              }
             }
           }
         }
