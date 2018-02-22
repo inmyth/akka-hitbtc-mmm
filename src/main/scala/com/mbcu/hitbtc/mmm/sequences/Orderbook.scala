@@ -28,6 +28,13 @@ class Orderbook (var pair: String, var sels : Seq[Order], var buys : Seq[Order])
     }
   }
 
+  override def getTopSel: Option[Order] = sels.lift(0)
+
+  override def getLowSel: Option[Order] = sels.lastOption
+
+  override def getTopBuy: Option[Order] = buys.lift(0)
+
+  override def getLowBuy: Option[Order] = buys.lastOption
 
   override def toString : String = {
     val builder = StringBuilder.newBuilder
@@ -47,11 +54,11 @@ class Orderbook (var pair: String, var sels : Seq[Order], var buys : Seq[Order])
     builder.toString()
   }
 
-  override def getTopSel: Option[Order] = sels.lift(0)
+  def seed() : Unit = {
+    if (buys.isEmpty && sels.isEmpty){
 
-  override def getLowSel: Option[Order] = sels.lastOption
+    }
+  }
 
-  override def getTopBuy: Option[Order] = buys.lift(0)
 
-  override def getLowBuy: Option[Order] = buys.lastOption
 }

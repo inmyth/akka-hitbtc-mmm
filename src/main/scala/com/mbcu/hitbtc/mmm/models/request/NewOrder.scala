@@ -1,13 +1,32 @@
 package com.mbcu.hitbtc.mmm.models.request
 
-import play.api.libs.json.Json
+import com.mbcu.hitbtc.mmm.models.response.Order
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
 
-case class NewOrderParam (clientOrderdId : String, symbol : String, side : String, price : String, quantity: String)
+
+case class NewOrderParam (clientOrderdId : String, symbol : String, side : String, price : BigDecimal, quantity: BigDecimal)
 object NewOrderParam {
   implicit val jsonFormat = Json.format[NewOrderParam]
 
-  def from(clientOrderdId : String, symbol : String, side : String, price : BigDecimal, quantity: BigDecimal) : NewOrderParam = {
-    new NewOrderParam(clientOrderdId, symbol, side, price.toString(), quantity.toString())
+  object Implicits {
+    implicit val newOrderParamWrites = new Writes[NewOrderParam] {
+      def writes(nwp: NewOrderParam): JsValue = Json.obj(
+        "clientOrderdId" -> nwp.clientOrderdId,
+        "symbol" -> nwp.symbol,
+        "side" -> nwp.side,
+        "price" -> nwp.price,
+        "quantity" -> nwp.quantity
+      )
+    }
+
+    implicit val walletReads: Reads[NewOrderParam] = (
+      (JsPath \ "clientOrderdId").read[String] and
+      (JsPath \ "symbol").read[String] and
+      (JsPath \ "side").read[String] and
+      (JsPath \ "price").read[BigDecimal] and
+      (JsPath \ "quantity").read[BigDecimal]
+      ) (NewOrderParam.apply _)
   }
 }
 

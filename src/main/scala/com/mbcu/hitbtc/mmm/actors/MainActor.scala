@@ -11,7 +11,7 @@ import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.{Login, SubscribeReports}
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
-import com.mbcu.hitbtc.mmm.sequences.Orderbook
+import com.mbcu.hitbtc.mmm.sequences.{Orderbook, State}
 import com.sun.xml.internal.ws.api.Cancelable
 import play.api.libs.json.Json
 
@@ -27,8 +27,9 @@ class MainActor(configPath : String) extends Actor{
   private var config: Option[Config] = None
   private var ws: Option[ActorRef] = None
   private var parser: Option[ActorRef] = None
-  private var orderbooks = scala.collection.immutable.Map[String, Orderbook]()
+//  private var orderbooks = scala.collection.immutable.Map[String, Orderbook]()
   private var cancellable : Option[Cancellable] = None
+  private var state : Option[State] = None
   implicit val ec = global
   val initDone : Boolean = false
 
@@ -41,15 +42,14 @@ class MainActor(configPath : String) extends Actor{
 
     case ConfigInitiated(cfg) => {
       config = Some(cfg)
+      state = Some(new State(Map.empty, cfg))
+      state map (_.initOrderbooks())
       ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws"))))
-      self ! "init trade pairs"
+      self ! "init logger"
       ws.map(_ ! "start")
     }
 
-    case "init trade pairs" => {
-      config.foreach(_.bots foreach  (bot => {
-        orderbooks = orderbooks +  (bot.pair -> new Orderbook(bot.pair, Seq.empty[Order], Seq.empty[Order]))
-      }))
+    case "init logger" => {
       val scheduleActor = context.actorOf(Props(classOf[ScheduleActor]))
       cancellable =Some(
         context.system.scheduler.schedule(
@@ -59,9 +59,7 @@ class MainActor(configPath : String) extends Actor{
           "log orderbooks"))
     }
 
-    case "log orderbooks" => {
-      orderbooks foreach  {case (key, value) => println(key, value)}
-    }
+    case "log orderbooks" => state map (_.logOrderbooks())
 
 
     case WsConnected => {
@@ -77,22 +75,7 @@ class MainActor(configPath : String) extends Actor{
 
     case SubsribeReportsSuccess => println("Subscribe Reports success")
 
-    case ActiveOrders(ordersOption : Option[Seq[Order]]) => {
-      ordersOption match {
-        case Some(orders) => {
-          orders
-            .filter(order => orderbooks.contains(order.symbol))
-            .foreach (order => {
-              orderbooks.get(order.symbol) match {
-                case Some(orderbook) => orderbook.add(order)
-                case _ => println("MainActor#ActiveOrders : no orderbook")
-              }
-          })
-        }
-        case _ => println("MainActor#ActiveOrders : no orders")
-      }
-    }
-
+    case ActiveOrders(ordersOption : Option[Seq[Order]]) => state map (_.fillOrderbook(ordersOption))
 
 
     case RPCFailed(id, error) => {
