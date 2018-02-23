@@ -20,7 +20,7 @@ class StrategyTest extends FunSuite {
   val mtp = ONE + gridSpace(mc) / CENT
 
   val order = Order(
-    "test",
+    "testID",
     "clientabc",
     "XRPBTC",
     "sell",
@@ -29,9 +29,11 @@ class StrategyTest extends FunSuite {
     "GTC",
     qty,
     price,
-    "",
+    BigDecimal("0"),
     "2018-02-17T21:08:01.983Z",
     "2018-02-17T21:08:01.983Z",
+    None,
+    None,
     "new"
   )
 

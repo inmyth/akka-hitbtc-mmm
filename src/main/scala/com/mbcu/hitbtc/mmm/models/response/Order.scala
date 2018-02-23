@@ -1,5 +1,6 @@
 package com.mbcu.hitbtc.mmm.models.response
 
+import akka.http.scaladsl.model.DateTime
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
@@ -21,12 +22,18 @@ object Order {
         "cumQuantity" -> order.cumQuantity,
         "createdAt" -> order.createdAt,
         "updatedAt" -> order.updatedAt,
+        "stopPrice" -> order.stopPrice,
+        "expireTime" -> order.expireTime,
         "reportType" -> order.reportType,
-
+        "tradeQuantity" -> order.tradeQuantity,
+        "tradePrice" -> order.tradePrice,
+        "tradeId" -> order.tradeId,
+        "tradeFee" -> order.tradeFee,
+        "originalRequestClientOrderId" -> order.originalRequestClientOrderId
       )
     }
 
-    implicit val walletReads: Reads[Order] = (
+    implicit val orderReads: Reads[Order] = (
         (JsPath \ "id").read[String] and
         (JsPath \ "clientOrderId").read[String] and
         (JsPath \ "symbol").read[String] and
@@ -36,11 +43,21 @@ object Order {
         (JsPath \ "timeInForce").read[String] and
         (JsPath \ "quantity").read[BigDecimal] and
         (JsPath \ "price").read[BigDecimal] and
-        (JsPath \ "cumQuantity").read[String] and
+        (JsPath \ "cumQuantity").read[BigDecimal] and
         (JsPath \ "createdAt").read[String] and
         (JsPath \ "updatedAt").read[String] and
-        (JsPath \ "reportType").read[String]
+        (JsPath \ "stopPrice").readNullable[BigDecimal] and
+        (JsPath \ "expireTime").readNullable[String] and
+        (JsPath \ "reportType").read[String] and
+        (JsPath \ "tradeQuantity").readNullable[BigDecimal] and
+        (JsPath \ "tradePrice").readNullable[BigDecimal] and
+        (JsPath \ "tradeId").readNullable[Long] and
+        (JsPath \ "tradeFee").readNullable[BigDecimal] and
+        (JsPath \ "originalRequestClientOrderId").readNullable[String]
+
+
       ) (Order.apply _)
+
   }
 }
 
@@ -54,18 +71,45 @@ case class Order (
   timeInForce : String,
   quantity : BigDecimal,
   price : BigDecimal,
-  cumQuantity : String,
+  cumQuantity : BigDecimal,
   createdAt : String,
   updatedAt : String,
-  reportType : String
+  stopPrice : Option[BigDecimal] = None,
+  expireTime : Option[String] = None,
+  reportType : String,
+  tradeQuantity : Option[BigDecimal] = None,
+  tradePrice : Option[BigDecimal] = None ,
+  tradeId : Option[Long] = None,
+  tradeFee : Option[BigDecimal] = None ,
+  originalRequestClientOrderId : Option[String] = None
 )
 
-
-
-
-
-
 /*
+id 	Number 	Unique identifier for Order as assigned by exchange
+clientOrderId 	String 	Unique identifier for Order as assigned by trader.
+symbol 	String 	Trading symbol
+side 	String 	sell or buy
+status 	String 	new, suspended, partiallyFilled, filled, canceled, expired
+type 	String 	Enum: limit, market, stopLimit, stopMarket
+timeInForce 	String 	Time in force is a special instruction used when placing a trade to indicate how long an order will remain active before it is executed or expires
+  GTC - Good till cancel. GTC order won't close until it is filled.
+  IOC - An immediate or cancel order is an order to buy or sell that must be executed immediately, and any portion of the order that cannot be immediately filled is cancelled.
+  FOK - Fill or kill is a type of time-in-force designation used in securities trading that instructs a brokerage to execute a transaction immediately and completely or not at all.
+  Day - keeps the order active until the end of the trading day in UTC.
+  GTD - Good till date specified in expireTime.
+quantity 	Number 	Order quantity
+price 	Number 	Order price
+cumQuantity 	Number 	Cumulative executed quantity
+createdAt 	Datetime
+updatedAt 	Datetime
+stopPrice 	Number
+expireTime 	Datetime
+reportType 	String 	One of: status, new, canceled, expired, suspended, trade, replaced
+tradeId 	Number 	Required for reportType = trade. Trade Id.
+tradeQuantity 	Number 	Required for reportType = trade. Quantity of trade.
+tradePrice 	Number 	Required for reportType = trade. Trade price.
+tradeFee 	Number 	Required for reportType = trade. Fee paid for trade.
+originalRequestClientOrderId 	String 	Identifier of replaced order.
       "id": "17626743960",
       "clientOrderId": "client123456",
       "symbol": "XRPBTC",

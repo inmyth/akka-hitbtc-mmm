@@ -10,3 +10,6 @@
 - [] handle smaller than minimum trade price response
 - [] seed will start after init
 - [] each order consumed will trigger counter and balancer
+- [x] get sample filled order
+- [x] get sample partially-filled order
+- [x] commonalize ppt strategy

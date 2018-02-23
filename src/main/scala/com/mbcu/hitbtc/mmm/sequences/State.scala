@@ -25,7 +25,7 @@ class State (var orderbooks : scala.collection.immutable.Map[String, Orderbook],
 
   def initOrderbooks() : Unit = {
     config.bots foreach  (bot => {
-      orderbooks = orderbooks +  (bot.pair -> new Orderbook(bot.pair, Seq.empty[Order], Seq.empty[Order]))
+      orderbooks = orderbooks +  (bot.pair -> new Orderbook(bot.pair))
     })
   }
 

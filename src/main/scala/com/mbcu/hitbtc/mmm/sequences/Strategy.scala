@@ -7,6 +7,7 @@ import java.util.stream.IntStream
 import com.mbcu.hitbtc.mmm.models.internal.Bot
 import com.mbcu.hitbtc.mmm.models.request.{NewOrder, NewOrderParam}
 import com.mbcu.hitbtc.mmm.models.response.Order
+import com.mbcu.hitbtc.mmm.sequences.Strategy.Movement.Movement
 import com.mbcu.hitbtc.mmm.utils.MyUtils
 
 import scala.util.Random
@@ -17,29 +18,37 @@ object Strategy {
   val ONE = BigDecimal("1")
   val CENT = BigDecimal("100")
 
+  object Movement extends Enumeration {
+    type Movement = Value
+    val UP, DOWN  = Value
+  }
+
+
   def pptSeed (start : Order, levels : Integer, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean) : Seq[NewOrder] = {
     val mtp = ONE + gridSpace(mc) / CENT
     val unitPrice0 = start.price
     val qty0 = start.quantity
-
     val range = if(isPulledFromOtherSide) 3 else 2
 
     (range until (levels + range))
       .map(n => {
         val rate = Collections.nCopies(n, ONE).stream().reduce((x, y) => x * mtp).get();
-        val unitPrice1 = if (side == "buy") unitPrice0(mc) / rate else unitPrice0 * rate
-        val sqrt = MyUtils.sqrt(rate)
-        val qty1 = if (side == "buy") qty0 * sqrt else qty0(mc) / sqrt
-
+        val movement = if (side == "buy") Movement.DOWN else Movement.UP
+        val (unitPrice1, qty1) = ppt(unitPrice0, qty0, rate, movement)
         val newOrderParam = NewOrderParam("ykbot", start.symbol, start.side, unitPrice1, qty1)
         newOrderParam
       })
       .filter(_.price > ZERO)
       .filter(_.quantity > ZERO)
       .map(p => NewOrder("order_" + Random.nextString(4) + System.currentTimeMillis(), p))
-
   }
 
+  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, movement: Movement ): (BigDecimal, BigDecimal) ={
+    val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
+    val sqrt = MyUtils.sqrt(rate)
+    val qty1 = if (movement == Movement.DOWN) qty0 * sqrt else qty0(mc) / sqrt
+    (unitPrice1, qty1)
+  }
   /*
 
   		MathContext mc = MathContext.DECIMAL64;

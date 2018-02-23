@@ -1,6 +1,5 @@
-package com.mbcu.hitbtc.mmm.models
+package com.mbcu.hitbtc.mmm.models.request
 
-import com.mbcu.hitbtc.mmm.models.request.{Login, LoginParams}
 import org.scalatest.FunSuite
 import play.api.libs.json.{JsValue, Json}
 

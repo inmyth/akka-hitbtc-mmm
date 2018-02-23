@@ -2,11 +2,12 @@ package com.mbcu.hitbtc.mmm.sequences
 
 import com.mbcu.hitbtc.mmm.models.response.Order
 
+import scala.collection.immutable.ListMap
+
 trait OrderbookTrait {
 
-  def sort()    : Unit
-  def sortBuy() : Unit
-  def sortSel() : Unit
+  def sortBuys() : Seq[Order]
+  def sortSels() : Seq[Order]
 
   def getTopSel : Option[Order]
   def getLowSel : Option[Order]
