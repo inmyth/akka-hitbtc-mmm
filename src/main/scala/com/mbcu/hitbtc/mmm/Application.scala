@@ -17,7 +17,7 @@ object Application extends App {
       println("Requires one argument : config file path")
       system.terminate();
     }
-    var mainActor = system.actorOf(Props(new MainActor(args(0))))
+    var mainActor = system.actorOf(Props(new MainActor(args(0))), name = "main")
     mainActor ! "start"
 
 //    val fileActor = system.actorOf(Props(new FileActor(args(0))))

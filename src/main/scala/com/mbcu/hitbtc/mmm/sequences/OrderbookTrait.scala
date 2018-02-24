@@ -6,8 +6,6 @@ import scala.collection.immutable.ListMap
 
 trait OrderbookTrait {
 
-  def sortBuys() : Seq[Order]
-  def sortSels() : Seq[Order]
 
   def getTopSel : Option[Order]
   def getLowSel : Option[Order]

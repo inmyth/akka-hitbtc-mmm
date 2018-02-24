@@ -11,7 +11,6 @@ import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.{Login, SubscribeReports}
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
-import com.mbcu.hitbtc.mmm.sequences.{Orderbook, State}
 import com.sun.xml.internal.ws.api.Cancelable
 import play.api.libs.json.Json
 
@@ -27,9 +26,9 @@ class MainActor(configPath : String) extends Actor{
   private var config: Option[Config] = None
   private var ws: Option[ActorRef] = None
   private var parser: Option[ActorRef] = None
-//  private var orderbooks = scala.collection.immutable.Map[String, Orderbook]()
   private var cancellable : Option[Cancellable] = None
-  private var state : Option[State] = None
+  private var state : Option[ActorRef] = None
+//  private var state : Option[State] = None
   implicit val ec = global
   val initDone : Boolean = false
 
@@ -42,11 +41,11 @@ class MainActor(configPath : String) extends Actor{
 
     case ConfigInitiated(cfg) => {
       config = Some(cfg)
-      state = Some(new State(Map.empty, cfg))
-      state map (_.initOrderbooks())
-      ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws"))))
-      self ! "init logger"
-      ws.map(_ ! "start")
+      state = Some(context.actorOf(Props(new StateActor(cfg)), name = "state"))
+      state foreach (_ ! "start")
+      ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws")), name = "ws"))
+//      self ! "init logger"
+      ws.foreach(_ ! "start")
     }
 
     case "init logger" => {
@@ -59,8 +58,7 @@ class MainActor(configPath : String) extends Actor{
           "log orderbooks"))
     }
 
-//    case "log orderbooks" => state map (_.logOrderbooks())
-
+    case s : String if s == "log orderbooks" => state foreach (_ forward s)
 
     case WsConnected => {
       parser = Some(context.actorOf(Props(new ParserActor(config))))
@@ -68,21 +66,20 @@ class MainActor(configPath : String) extends Actor{
     }
 
     case "login" => {
-      config.map(c => ws.map(_ ! SendJs(Json.toJson(Login.from(c)))))
+      config.foreach(c => ws.foreach(_ ! SendJs(Json.toJson(Login.from(c)))))
     }
 
-    case LoginSuccess => ws.map(_ ! SendJs(SubscribeReports.toJsValue()))
+    case LoginSuccess => ws.foreach(_ ! SendJs(SubscribeReports.toJsValue()))
 
     case SubsribeReportsSuccess => println("Subscribe Reports success")
 
-    case ActiveOrders(ordersOption : Option[Seq[Order]]) => state map (_.fillOrderbook(ordersOption))
+    case activeOrders : ActiveOrders => state foreach (_ forward activeOrders)
 
 
     case RPCFailed(id, error) => {
       println(s"Id : ${id}, ${error}")
       context.system.terminate()
     }
-
 
 
     case wsGotText : WsGotText => {
