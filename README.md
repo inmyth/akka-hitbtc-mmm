@@ -1,13 +1,10 @@
-## HitBtc Market Maker
+# HitBtc Market Maker
 
+## Config
 
-
-### Credentials
-
+#### Credentials 
 - only supports HS256
-- use https://www.freeformatter.com/hmac-generator.html to generate signature (nonce -> string input)
 
-### Config
 **pKey (String)**
 
 API Key. Must provide permissions to
@@ -24,13 +21,13 @@ HS256 signature. Use https://www.freeformatter.com/hmac-generator.html to genera
 - nonce -> string input
 - apiKey -> secret
 
-### Env
+#### Env
 
 **logSeconds (int)**
 
 Interval in seconds of orderbook log
 
-### Bots
+#### Bots
 
 **pair (String)**
 
