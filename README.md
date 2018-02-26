@@ -2,7 +2,7 @@
 
 ## Config
 
-#### Credentials 
+### Credentials 
 - only supports HS256
 
 **pKey (String)**
@@ -21,13 +21,13 @@ HS256 signature. Use https://www.freeformatter.com/hmac-generator.html to genera
 - nonce -> string input
 - apiKey -> secret
 
-#### Env
+### Env
 
 **logSeconds (int)**
 
 Interval in seconds of orderbook log
 
-#### Bots
+### Bots
 
 **pair (String)**
 
@@ -55,7 +55,7 @@ Strategy to be used. Refer to strategy section for valid names.
 
 ## Strategies
 
-#### Proportional `ppt`
+### Proportional `ppt`
 
 In this mode both base quantity and unit price are spaced by percentage point of the previous offerCreate level.
 
