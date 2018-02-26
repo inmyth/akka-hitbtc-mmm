@@ -18,7 +18,7 @@ API Key. Must provide permissions to
 
 Random text
 
-**signature**
+**signature (String)**
 
 HS256 signature. Use https://www.freeformatter.com/hmac-generator.html to generate signature 
 - nonce -> string input
@@ -66,16 +66,3 @@ For sell direction p1 = (1 + gridSpace / 100) * p0 and q1 = q0 / (1 + gridSpace 
 
 For buy direction p1 = p0  / (1 + gridSpace / 100) and q1 = q0 * (1 + gridSpace / 100)^0.5
 
-### Notes
-
-#### Order Cancelation
-- only two things can remove an item by non filled : cancel and insufficient fund
-
-#### ClientOrderId and Id
-ClientOrderId is set by client and maps to order and its activities (new, filled, partiallyFilled, etc), and has to be unique.
-
-Id  can be set by client or HitBTC and it's optional. It is associated with a request (uniqueness is not needed)
-
-ClientOrderId only comes back in response if the request is successful. Id comes back if request is successful or not. 
-
-Use Id to intercept submission failure (not enough fund)
