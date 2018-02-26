@@ -1,10 +1,9 @@
-package com.mbcu.hitbtc.mmm.sequences
+package com.mbcu.hitbtc.mmm.traits
 
 import com.mbcu.hitbtc.mmm.models.response.Order
 
-import scala.collection.immutable.ListMap
-
 trait OrderbookTrait {
+
 
 
   def getTopSel : Option[Order]

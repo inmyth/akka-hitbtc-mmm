@@ -70,3 +70,4 @@ fabric.properties
 
 config.txt
 config-extra.txt
+/log/

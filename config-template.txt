@@ -1,19 +1,23 @@
 {
-"credentials" : {
-    "pKey" : "API KEY",
-    "nonce": "abcabc",
-    "signature": "signsignsign"
-},
-"bots" : [
-        {
-            "pair": "XRPBTC",
-            "startMiddlePrice": "10",
-            "gridSpace": "0.5",
-            "buyGridLevels": 2,
-            "sellGridLevels": 2,
-            "buyOrderQuantity": "1",
-            "sellOrderQuantity": "1",
-            "strategy" : "ppt"
-        }
-    ]
+    "credentials" : {
+        "pKey" : "API KEY",
+        "nonce": "abcabc",
+        "signature": "signsignsign"
+    },
+    "env": {
+        "email" : "",
+        "logSeconds" : 10
+    },
+    "bots" : [
+            {
+                "pair": "XRPBTC",
+                "startMiddlePrice": "10",
+                "gridSpace": "0.5",
+                "buyGridLevels": 2,
+                "sellGridLevels": 2,
+                "buyOrderQuantity": "1",
+                "sellOrderQuantity": "1",
+                "strategy" : "ppt"
+            }
+        ]
 }

@@ -13,9 +13,6 @@ import play.api.libs.json.{JsResult, Json}
 
 object FileActor {
   def props(path : String): Props = Props(new FileActor(path))
-
-
-
 }
 
 class FileActor(path : String) extends Actor {
@@ -23,27 +20,18 @@ class FileActor(path : String) extends Actor {
 
   override def receive: Receive = {
 
-
-    case "start" => {
-      import MainActor.ConfigInitiated
-//      implicit val configFormat = Json.format[Config]
+    case "start" =>
+      import MainActor.ConfigReady
       parents = Some(sender)
       val source = scala.io.Source.fromFile(path)
       val rawJson = try source.mkString finally source.close()
-//      val res = Json.fromJson[Config](Json.parse(rawJson))
-//      println(rawJson)
-
       val config: Config = Json.parse(rawJson).as[Config]
-      parents.map (_ ! ConfigInitiated(config))
-    }
+      parents.foreach(_ ! ConfigReady(config))
 
-    case "listen" => {
+    case "listen" =>
       val fileMonitorActor = context.actorOf(MonitorActor(concurrency = 2))
-
       val modifyCallbackFile: Callback = { path => println(s"Something was modified in a file: $path")}
-
       val file = Paths get path
-
       /*
         This will receive callbacks for just the one file
       */
@@ -52,9 +40,8 @@ class FileActor(path : String) extends Actor {
         path = file,
         callback =  modifyCallbackFile
       )
-    }
 
-    case _ => println("FileActor: message not recognized!")
+    case _ => println("FileActor#start: _")
   }
 
 }

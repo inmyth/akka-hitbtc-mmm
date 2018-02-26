@@ -5,7 +5,8 @@
     "pKey": "fd5f0aa793405f356beba728170e7a13",
     "nonce": "abcabc",
     "signature": ""
-  }
+  },
+  "id" : "login"
 }
 {"jsonrpc":"2.0","result":true,"id":null}
 ##

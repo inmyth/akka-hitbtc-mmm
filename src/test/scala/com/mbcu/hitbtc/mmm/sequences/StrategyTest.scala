@@ -17,7 +17,7 @@ class StrategyTest extends FunSuite {
   val qty = BigDecimal("1")
   val price = BigDecimal("0.00009")
   val gridSpace = BigDecimal("1")
-  val mtp = ONE + gridSpace(mc) / CENT
+  val mtp: BigDecimal = ONE + gridSpace(mc) / CENT
 
   val order = Order(
     "testID",
@@ -37,43 +37,58 @@ class StrategyTest extends FunSuite {
     "new"
   )
 
-  test("seed sell pulledFromOtherSide") {
-    val res = Strategy.pptSeed(order, 3, BigDecimal(1), "sell", true)
-    assert(res.size == 3)
-    assert(res(0).params.price == price * mtp * mtp)
-    assert(res(0).params.quantity == qty(mc) / mtp )
-    assert(res(1).params.price / res(0).params.price == mtp)
+  test("ppt seed sell pulledFromOtherSide") {
+    val res = Strategy.pptSeed(order.quantity, order.price, order.symbol, 3, BigDecimal(1), "sell",  isPulledFromOtherSide = true)
+    assert(res.lengthCompare(3) == 0)
+    assert(res.head.params.price == price * mtp * mtp)
+    assert(res.head.params.quantity == qty(mc) / mtp )
+    assert(res(1).params.price / res.head.params.price == mtp)
 //    assert(res(1).params.quantity(mc) / res(0).params.quantity == ONE(mc) / MyUtils.sqrt(mtp))
   }
 
 
-  test("seed sell") {
-    val res = Strategy.pptSeed(order, 3, BigDecimal(1), "sell", false)
-    assert(res.size == 3)
-    assert(res(0).params.price == price * mtp)
-    assert(res(0).params.quantity == qty(mc) / MyUtils.sqrt(mtp))
-    assert(res(1).params.price / res(0).params.price == mtp)
-//    assert(res(1).params.quantity(mc) / res(0).params.quantity == ONE(mc) / MyUtils.sqrt(mtp))
+  test("ppt seed sell") {
+    val res = Strategy.pptSeed(order.quantity, order.price, order.symbol, 3, BigDecimal(1), "sell",  isPulledFromOtherSide = false)
+    assert(res.lengthCompare(3) == 0)
+    assert(res.head.params.price == price * mtp)
+    assert(res.head.params.quantity == qty(mc) / MyUtils.sqrt(mtp))
+    assert(res(1).params.price / res.head.params.price == mtp)
+//    assert((res(1).params.quantity(mc) / res.head.params.quantity) == ONE(mc) / MyUtils.sqrt(mtp))
   }
 
-  test("buy sell pulledFromOtherSide") {
-    val res = Strategy.pptSeed(order, 3, BigDecimal(1), "buy", true)
-    assert(res.size == 3)
-    assert(res(0).params.price == price(mc) /  mtp / mtp)
-    assert(res(0).params.quantity == qty(mc) * mtp )
-    assert(res(0).params.price / res(1).params.price == mtp)
-    assert(res(0).params.price / res(2).params.price == mtp * mtp)
+  test("ppt buy sell pulledFromOtherSide") {
+    val res = Strategy.pptSeed(order.quantity, order.price, order.symbol, 3, BigDecimal(1), "buy",  isPulledFromOtherSide = true)
+    assert(res.lengthCompare(3) == 0)
+    assert(res.head.params.price == price(mc) /  mtp / mtp)
+    assert(res.head.params.quantity == qty(mc) * mtp )
+    assert(res.head.params.price / res(1).params.price == mtp)
+    assert(res.head.params.price / res(2).params.price == mtp * mtp)
   }
 
 
-  test("seed buy") {
-    val res = Strategy.pptSeed(order, 3, BigDecimal(1), "buy", false)
-    assert(res.size == 3)
-    assert(res(0).params.price == price(mc) /  mtp )
-    assert(res(0).params.quantity == qty(mc) * MyUtils.sqrt(mtp))
-    assert(res(0).params.price / res(1).params.price == mtp)
-    assert(res(0).params.price / res(2).params.price == mtp * mtp)
+  test("ppt seed buy") {
+    val res = Strategy.pptSeed(order.quantity, order.price, order.symbol, 3, BigDecimal(1), "buy", isPulledFromOtherSide = false)
+    assert(res.lengthCompare(3) == 0)
+    assert(res.head.params.price == price(mc) /  mtp )
+    assert(res.head.params.quantity == qty(mc) * MyUtils.sqrt(mtp))
+    assert(res.head.params.price / res(1).params.price == mtp)
+    assert(res.head.params.price / res(2).params.price == mtp * mtp)
   }
 
+  test("ppt counter from buy"){
+    val res = Strategy.counter(order.quantity, order.price, order.symbol, BigDecimal("1"), "buy", "ppt")
+    assert(res.lengthCompare(1) == 0)
+    assert(res.head.params.side == "sell")
+    assert(res.head.params.price == price(mc) *  mtp )
+    assert(res.head.params.quantity == qty(mc) / MyUtils.sqrt(mtp))
+  }
+
+  test("ppt counter from sell"){
+    val res = Strategy.counter(order.quantity, order.price, order.symbol, BigDecimal("1"), "sell", "ppt")
+    assert(res.lengthCompare(1) == 0)
+    assert(res.head.params.side == "buy")
+    assert(res.head.params.price == price(mc) /  mtp )
+    assert(res.head.params.quantity == qty(mc) * MyUtils.sqrt(mtp))
+  }
 
 }

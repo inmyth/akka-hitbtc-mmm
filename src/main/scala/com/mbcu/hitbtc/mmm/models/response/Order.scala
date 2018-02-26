@@ -1,6 +1,7 @@
 package com.mbcu.hitbtc.mmm.models.response
 
 import akka.http.scaladsl.model.DateTime
+import com.mbcu.hitbtc.mmm.models.request.NewOrder
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
@@ -54,10 +55,17 @@ object Order {
         (JsPath \ "tradeId").readNullable[Long] and
         (JsPath \ "tradeFee").readNullable[BigDecimal] and
         (JsPath \ "originalRequestClientOrderId").readNullable[String]
-
-
       ) (Order.apply _)
 
+  }
+
+  def tempNewOrder(no : NewOrder) : Order = {
+    val clientOrderId = no.params.clientOrderId
+    val symbol = no.params.symbol
+    val side = no.params.side
+    val qty = no.params.quantity
+    val price = no.params.price
+    new Order("", clientOrderId, symbol, side, "", "", "", qty, price, BigDecimal("-1"), "", "", None, None, "")
   }
 }
 

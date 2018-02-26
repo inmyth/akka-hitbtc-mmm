@@ -42,7 +42,7 @@ private var main: Option[ActorRef] = None
 
       ws match {
         case Some(webSocket) => webSocket.sendText(json)
-        case _ => println("WS Actor Send :  No Websocket")
+        case _ => println("WSActor#SendJs : No Websocket")
       }
     }
 

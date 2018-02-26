@@ -5,14 +5,14 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 
-case class NewOrderParam (clientOrderdId : String, symbol : String, side : String, price : BigDecimal, quantity: BigDecimal)
+case class NewOrderParam (clientOrderId : String, symbol : String, side : String, price : BigDecimal, quantity: BigDecimal)
 object NewOrderParam {
   implicit val jsonFormat = Json.format[NewOrderParam]
 
   object Implicits {
     implicit val newOrderParamWrites = new Writes[NewOrderParam] {
       def writes(nwp: NewOrderParam): JsValue = Json.obj(
-        "clientOrderdId" -> nwp.clientOrderdId,
+        "clientOrderId" -> nwp.clientOrderId,
         "symbol" -> nwp.symbol,
         "side" -> nwp.side,
         "price" -> nwp.price,
@@ -21,7 +21,7 @@ object NewOrderParam {
     }
 
     implicit val walletReads: Reads[NewOrderParam] = (
-      (JsPath \ "clientOrderdId").read[String] and
+      (JsPath \ "clientOrderId").read[String] and
       (JsPath \ "symbol").read[String] and
       (JsPath \ "side").read[String] and
       (JsPath \ "price").read[BigDecimal] and

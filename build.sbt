@@ -17,7 +17,6 @@ libraryDependencies ++= Seq(
   "javax.inject" % "javax.inject" % "1",
   "com.neovisionaries" % "nv-websocket-client" % "2.3",
   "com.typesafe.play" %% "play-functional" % "2.6.8",
-  "redis.clients" % "jedis" % "2.9.0",
   "com.beachape.filemanagement" %% "schwatcher" % "0.3.2",
   "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
   "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,

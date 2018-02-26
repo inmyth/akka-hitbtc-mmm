@@ -5,11 +5,15 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 
-
 case class Credentials (pKey : String, nonce: String, signature : String)
 object Credentials {
   implicit val jsonFormat = Json.format[Credentials]
 
+}
+
+case class Env(email : String, logSeconds : Int)
+object Env {
+  implicit val jsonFormat = Json.format[Env]
 }
 
 case class Bot (
@@ -52,7 +56,7 @@ object Bot {
   }
 }
 
-case class Config (credentials: Credentials, bots : List[Bot])
+case class Config (credentials: Credentials, env : Env, bots : List[Bot])
 object Config {
   implicit val jsonFormat = Json.format[Config]
 
