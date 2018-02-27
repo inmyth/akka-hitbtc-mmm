@@ -39,7 +39,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
     case "init orders completed" =>
       sort("all")
-      balancer("all") foreach sendOrder
+      balancer("all") foreach (no => sendOrder(no, "seed"))
 
     case "log orderbooks" => info(dump())
 
@@ -59,9 +59,9 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
     case OrderFilled(order) =>
       remove(order)
-      var newOrders = counter(order)
-      newOrders ++= balancer(order.side)
-      newOrders foreach sendOrder
+      sort(order.side)
+      counter(order) foreach (no => sendOrder(no, "counter"))
+      balancer(order.side) foreach (no => sendOrder(no, "balancer"))
 
     case OrderPartiallyFilled(order) =>
       add(order)
@@ -72,8 +72,8 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       sort(order.side)
   }
 
-  def sendOrder(no : NewOrder): Unit ={
-    state foreach (_ ! SendNewOrder(no))
+  def sendOrder(no : NewOrder, as : String): Unit ={
+    state foreach (_ ! SendNewOrder(no, as))
   }
 
   def add(order : Order) : Unit = {
@@ -235,7 +235,9 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
    def dump() : String = {
     val builder = StringBuilder.newBuilder
     builder.append(System.getProperty("line.separator"))
-    builder.append(s"buys : ${buys.size}")
+    builder.append(self.path.name)
+     builder.append(System.getProperty("line.separator"))
+     builder.append(s"buys : ${buys.size}")
     builder.append(System.getProperty("line.separator"))
     sortedBuys.foreach(b => {
       builder.append(s"quantity:${b.quantity} price:${b.price} filled:${b.cumQuantity}")

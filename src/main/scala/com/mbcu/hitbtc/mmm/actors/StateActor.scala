@@ -14,7 +14,7 @@ object StateActor {
 
   case class SmartSort(ordersOption : Option[Seq[Order]])
 
-  case class SendNewOrder(no : NewOrder)
+  case class SendNewOrder(no : NewOrder, as : String)
 }
 
 class StateActor (val config : Config) extends Actor with MyLogging  {
@@ -61,7 +61,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
         case _ => println("MainActor#ActiveOrders : _")
       }
 
-    case SendNewOrder(newOrder) => main foreach (_ ! SendNewOrder(newOrder))
+    case SendNewOrder(newOrder, as) => main foreach (_ ! SendNewOrder(newOrder, as))
 
     case OrderNew(order) => context.actorSelection(s"/user/main/state/${order.symbol}") ! OrderNew(order)
 

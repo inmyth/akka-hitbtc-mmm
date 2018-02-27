@@ -1,4 +1,8 @@
-> 0.5
+1.0
+- ppt version
+- added sbt-assembly
+
+0.5
 - test run
 
 0.4
@@ -18,7 +22,7 @@
 - websocket connection
 
 ## TODO
-- [] test run ppt
+- [x] test run ppt
 - [] check all senders()
 - [x] handle not enough fund response
 - [x] handle smaller than minimum trade price response
@@ -28,3 +32,6 @@
 - [x] get sample filled order
 - [x] get sample partially-filled order
 - [x] commonalize ppt strategy
+- [] added minimum trade quantity
+- [] update config and readme for minimum trade quantity
+- [] implement rounding over min trade quantity

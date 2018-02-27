@@ -42,7 +42,6 @@ class MainActor(configPath : String) extends Actor with MyLogging {
     case "start" =>
       val fileActor = context.actorOf(Props(new FileActor(configPath)))
       fileActor ! "start"
-      info("test")
 
     case ConfigReady(cfg) =>
       config = Some(cfg)
@@ -85,9 +84,10 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case OrderSuspended(order) => error(s"Suspended id : ${order.clientOrderId} symbol:${order.symbol} side:${order.side}")
 
-    case SendNewOrder(newOrder) =>
-      info(s"""Sending new order" +
-        "|$newOrder""".stripMargin)
+    case SendNewOrder(newOrder, as) =>
+      info(
+        s"""Sending new order as ${as}
+           |$newOrder""".stripMargin)
       ws foreach (_ ! SendJs(Json.toJson(newOrder)))
 
     case ErrorNonAffecting(er, id) => logError(er, id)

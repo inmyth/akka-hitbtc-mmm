@@ -18,6 +18,7 @@ libraryDependencies ++= Seq(
   "com.neovisionaries" % "nv-websocket-client" % "2.3",
   "com.typesafe.play" %% "play-functional" % "2.6.8",
   "com.beachape.filemanagement" %% "schwatcher" % "0.3.2",
+  "com.eed3si9n" %% "sbt-assembly" % "sbt0.10.1_0.6",
   "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
   "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
   "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
