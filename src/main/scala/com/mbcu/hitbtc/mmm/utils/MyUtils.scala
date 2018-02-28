@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat
 import java.time.{LocalDateTime, ZoneId}
 import java.util.{Date, SimpleTimeZone, TimeZone}
 
+import scala.math.BigDecimal.RoundingMode
+
 
 object MyUtils {
 
@@ -50,5 +52,17 @@ object MyUtils {
 
   def sideFromId(id : String) : Option[String] = {
     id.split("[.]").lift(1)
+  }
+
+  def roundCeil(a : BigDecimal, scale : Int): BigDecimal ={
+    a.setScale(scale, RoundingMode.CEILING)
+  }
+
+  def roundFloor(a : BigDecimal, scale : Int): BigDecimal ={
+    a.setScale(scale, RoundingMode.FLOOR)
+  }
+
+  def roundHalfDown(a : BigDecimal, scale : Int) : BigDecimal = {
+    a.setScale(scale, RoundingMode.HALF_DOWN)
   }
 }

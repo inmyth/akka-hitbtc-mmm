@@ -47,7 +47,20 @@ Number of seed orders for buy and sell sides respectively.
 
 **buyOrderQuantity and sellOrderQuantity (String)**
 
-Amount of seed and counter order. This value is used for any strategy beside *partial*
+Amount of seed and counter order.
+
+
+**qtyScale (int)**
+Scale of minimum quantity for base currency.
+
+Example
+
+XRP : minimum quantity = 1 XRP -> scale = 0
+
+ETH : minimum quantity = 0.001 ETH -> scale = 3
+
+DOGE : minimum quantity = 1000 DOGE -> scale = -3
+
 
 **strategy (String)**
 
@@ -63,3 +76,4 @@ For sell direction p1 = (1 + gridSpace / 100) * p0 and q1 = q0 / (1 + gridSpace 
 
 For buy direction p1 = p0  / (1 + gridSpace / 100) and q1 = q0 * (1 + gridSpace / 100)^0.5
 
+Pay attention minimum quantity. Ideally minimum quantity should be smaller than (gridSpace / 100 * quantity)

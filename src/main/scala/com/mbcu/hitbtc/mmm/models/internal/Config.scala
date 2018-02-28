@@ -24,7 +24,9 @@ buyGridLevels     : Int,
 sellGridLevels    : Int,
 buyOrderQuantity  : BigDecimal,
 sellOrderQuantity : BigDecimal,
+qtyScale          : Int,
 strategy          : String
+
 )
 object Bot {
   implicit val jsonFormat = Json.format[Bot]
@@ -39,6 +41,7 @@ object Bot {
         "sellGridLevels" -> bot.sellGridLevels,
         "buyOrderQuantity" -> bot.buyOrderQuantity,
         "sellOrderQuantity" -> bot.sellOrderQuantity,
+        "qtyScale" -> bot.qtyScale,
         "strategy" -> bot.strategy
       )
     }
@@ -51,6 +54,7 @@ object Bot {
       (JsPath \ "sellGridLevels").read[Int] and
       (JsPath \ "buyOrderQuantity").read[BigDecimal] and
       (JsPath \ "sellOrderQuantity").read[BigDecimal] and
+      (JsPath \ "qtyScale").read[Int] and
       (JsPath \ "strategy").read[String]
       ) (Bot.apply _)
   }

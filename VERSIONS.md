@@ -1,3 +1,9 @@
+1.1
+- used floor and ceil for ppt
+- added qtyScale on bot config
+- displayed clientOrderId on log orderbook
+- updated tests
+
 1.0
 - ppt version
 - added sbt-assembly

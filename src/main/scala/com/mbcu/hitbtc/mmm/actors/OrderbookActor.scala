@@ -113,7 +113,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   }
 
   def counter(order : Order) : Seq[NewOrder] = {
-    Strategy.counter(order.quantity, order.price, order.symbol, bot.gridSpace, order.side, bot.strategy )
+    Strategy.counter(order.quantity, order.price, bot.qtyScale, order.symbol, bot.gridSpace, order.side, bot.strategy )
   }
 
   def balancer(side : String) : Seq[NewOrder] = {
@@ -144,7 +144,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   def seed(side : String) : Seq[NewOrder] = {
     val preSeed = getPreSeed(side)
     if (preSeed._1 > 0){
-      Strategy.seed(preSeed._2, preSeed._3, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy)
+      Strategy.seed(preSeed._2, preSeed._3, bot.qtyScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy)
     }
     else {
       Seq.empty[NewOrder]
@@ -240,13 +240,13 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
      builder.append(s"buys : ${buys.size}")
     builder.append(System.getProperty("line.separator"))
     sortedBuys.foreach(b => {
-      builder.append(s"quantity:${b.quantity} price:${b.price} filled:${b.cumQuantity}")
+      builder.append(s"${b.clientOrderId} quantity:${b.quantity} price:${b.price} filled:${b.cumQuantity}")
       builder.append(System.getProperty("line.separator"))
     })
     builder.append(s"sells : ${sels.size}")
     builder.append(System.getProperty("line.separator"))
     sortedSels.foreach(s => {
-      builder.append(s"quantity:${s.quantity} price:${s.price} filled:${s.cumQuantity}")
+      builder.append(s"${s.clientOrderId} quantity:${s.quantity} price:${s.price} filled:${s.cumQuantity}")
       builder.append(System.getProperty("line.separator"))
     })
     builder.toString()
