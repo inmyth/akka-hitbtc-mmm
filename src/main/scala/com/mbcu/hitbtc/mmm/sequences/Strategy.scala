@@ -24,42 +24,60 @@ object Strategy {
     val UP, DOWN  = Value
   }
 
+  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean, strategy : String) : Seq[NewOrder] = {
+    var range = 0
 
-  def seed(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Integer, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean, strategy : String) : Seq[NewOrder] = {
     strategy match {
-      case "ppt" => pptSeed(qty0, unitPrice0, qtyScale, symbol, levels, gridSpace, side, isPulledFromOtherSide)
-
-      case _ => Seq.empty
+      case "ppt" => range = if(isPulledFromOtherSide) 3 else 2
+      case "full" => range = if(isPulledFromOtherSide) 2 else 1
+      case _ => 0
     }
+
+    (range until (levels + range))
+      .map(n => {
+        var rate : Option[BigDecimal] = None
+        strategy match {
+          case "ppt" =>
+            val mtp = ONE + gridSpace(mc) / CENT
+            rate = Some(Collections.nCopies(n, ONE).stream().reduce((x, y) => x * mtp).get())
+          case "full" => rate = Some(gridSpace * n)
+          case _ => rate = None
+        }
+        rate
+      })
+      .map(rate => {
+        var p1q1 : Option[(BigDecimal, BigDecimal)] = None
+        rate match {
+          case Some(r) =>
+            val movement = if (side == "buy") Movement.DOWN else Movement.UP
+            strategy match {
+              case "ppt" => p1q1 = Some(ppt(unitPrice0, qty0, r, qtyScale, movement))
+              case "full" => p1q1 = Some(step(unitPrice0, qty0, r, qtyScale, movement))
+              case _ => p1q1 = None
+            }
+          case _ => p1q1 = None
+        }
+        p1q1
+      })
+      .map(p1q1 => {
+        var newOrderParam : Option[NewOrderParam] = None
+        p1q1 match {
+          case Some(a) => newOrderParam = Some(NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, a._1, a._2))
+          case _ => newOrderParam = None
+        }
+        newOrderParam
+      })
+      .collect{case Some(p) => p}
+      .filter(_.price > ZERO)
+      .filter(_.quantity > ZERO)
+      .map(p => NewOrder(p.clientOrderId, p))
+
   }
 
   def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : String, strategy : String) : Seq[NewOrder] = {
     val newSide = if (side == "buy") "sell" else "buy"
-    strategy match {
-      case "ppt" => pptSeed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false)
-      case _ => Seq.empty
-    }
+    seed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy)
   }
-
-   def pptSeed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean) : Seq[NewOrder] = {
-     val mtp = ONE + gridSpace(mc) / CENT
-     val range = if(isPulledFromOtherSide) 3 else 2
-     (range until (levels + range))
-       .map(n => {
-         val rate = Collections.nCopies(n, ONE).stream().reduce((x, y) => x * mtp).get()
-         val movement = if (side == "buy") Movement.DOWN else Movement.UP
-         val (unitPrice1, qty1) = ppt(unitPrice0, qty0, rate, qtyScale, movement)
-         val newOrderParam = NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, unitPrice1, qty1)
-         newOrderParam
-       })
-       .filter(_.price > ZERO)
-       .filter(_.quantity > ZERO)
-       .map(p => NewOrder(p.clientOrderId, p))
-   }
-
-
-//  def pptSeed (start : Order, levels : Integer, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean) : Seq[NewOrder] = pptSeed(start.quantity, start.price, start.symbol, levels, gridSpace, side, isPulledFromOtherSide)
-
 
   def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
@@ -67,6 +85,17 @@ object Strategy {
     val qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * sqrt, qtyScale) else MyUtils.roundFloor(qty0(mc) / sqrt, qtyScale)
     (unitPrice1, qty1)
   }
+
+
+  def step(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={
+    val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) - rate else unitPrice0 + rate
+    val qty1 = qty0
+    (unitPrice1, qty1)
+  }
+
+
+
+
   /*
 
   		MathContext mc = MathContext.DECIMAL64;

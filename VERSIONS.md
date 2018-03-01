@@ -1,3 +1,8 @@
+1.2
+- added full strategy
+- refactored Strategy
+- updated test
+
 1.1
 - used floor and ceil for ppt
 - added qtyScale on bot config
@@ -38,6 +43,8 @@
 - [x] get sample filled order
 - [x] get sample partially-filled order
 - [x] commonalize ppt strategy
-- [] added minimum trade quantity
-- [] update config and readme for minimum trade quantity
-- [] implement rounding over min trade quantity
+- [x] added minimum trade quantity
+- [x] update config and readme for minimum trade quantity
+- [x] implement rounding over min trade quantity
+- [x] implement full strategy
+- [] add max min price
