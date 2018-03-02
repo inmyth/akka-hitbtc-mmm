@@ -57,7 +57,10 @@ class ParserActor(config : Option[Config]) extends Actor {
   override def receive: Receive = {
 
     case WsGotText(raw : String) => {
-      println(raw)
+      info(
+        s"""Raw response
+          |$raw
+        """.stripMargin)
 
       val jsValue : JsValue = Json.parse(raw)
 

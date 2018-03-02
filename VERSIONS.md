@@ -1,3 +1,11 @@
+1.3
+- enumerated strategies
+- added program argument for log dir
+- provided init for MyLoggingSingle
+- updated readme
+- updated dependencies
+
+
 1.2
 - added full strategy
 - refactored Strategy

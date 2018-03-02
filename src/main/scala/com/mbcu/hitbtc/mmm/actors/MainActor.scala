@@ -12,18 +12,19 @@ import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.{Login, NewOrder, SubscribeReports}
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
-import com.mbcu.hitbtc.mmm.utils.{MyLogging}
+import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle}
 import com.sun.xml.internal.ws.api.Cancelable
 import play.api.libs.json.Json
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 object MainActor {
 
   def props(configPath : String): Props = Props(new MainActor(configPath))
 
-  case class ConfigReady(config : Config)
+  case class ConfigReady(config : Try[Config])
 
 }
 
@@ -43,19 +44,27 @@ class MainActor(configPath : String) extends Actor with MyLogging {
       val fileActor = context.actorOf(Props(new FileActor(configPath)))
       fileActor ! "start"
 
-    case ConfigReady(cfg) =>
-      config = Some(cfg)
-      state = Some(context.actorOf(Props(new StateActor(cfg)), name = "state"))
-      state foreach (_ ! "start")
-      ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws")), name = "ws"))
-      val scheduleActor = context.actorOf(Props(classOf[ScheduleActor]))
-      cancellable =Some(
-        context.system.scheduler.schedule(
-          10 second,
-          (if (cfg.env.logSeconds < 5) 5 else cfg.env.logSeconds) second,
-          scheduleActor,
-          "log orderbooks"))
-      ws.foreach(_ ! "start")
+    case ConfigReady(tcfg) =>
+      tcfg match {
+        case Failure(f) => println(
+          s"""Config error
+            |$f
+          """.stripMargin)
+          System.exit(-1)
+        case Success(cfg) =>
+          config = Some(cfg)
+          state = Some(context.actorOf(Props(new StateActor(cfg)), name = "state"))
+          state foreach (_ ! "start")
+          ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws")), name = "ws"))
+          val scheduleActor = context.actorOf(Props(classOf[ScheduleActor]))
+          cancellable =Some(
+            context.system.scheduler.schedule(
+              10 second,
+              (if (cfg.env.logSeconds < 5) 5 else cfg.env.logSeconds) second,
+              scheduleActor,
+              "log orderbooks"))
+          ws.foreach(_ ! "start")
+      }
 
 
     case s : String if s == "log orderbooks" => state foreach (_ forward s)

@@ -1,6 +1,7 @@
 package com.mbcu.hitbtc.mmm.models.internal
 
 import com.mbcu.hitbtc.mmm.models.response.Order
+import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Strategies
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
@@ -25,7 +26,7 @@ sellGridLevels    : Int,
 buyOrderQuantity  : BigDecimal,
 sellOrderQuantity : BigDecimal,
 qtyScale          : Int,
-strategy          : String
+strategy          : Strategies
 
 )
 object Bot {
@@ -55,7 +56,7 @@ object Bot {
       (JsPath \ "buyOrderQuantity").read[BigDecimal] and
       (JsPath \ "sellOrderQuantity").read[BigDecimal] and
       (JsPath \ "qtyScale").read[Int] and
-      (JsPath \ "strategy").read[String]
+      (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)
   }
 }

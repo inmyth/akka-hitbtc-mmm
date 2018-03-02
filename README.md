@@ -1,5 +1,17 @@
 # HitBtc Market Maker
 
+
+To package
+```
+sbt assembly
+```
+(jar is in `/target`)
+
+To run
+```
+java -jar program.jar <path to config file> <path to log directory>
+```
+
 ## Config
 
 ### Credentials 
@@ -70,10 +82,36 @@ Strategy to be used. Refer to strategy section for valid names.
 
 ### Proportional `ppt`
 
-In this mode both base quantity and unit price are spaced by percentage point of the previous offerCreate level.
+Both base quantity and unit price are spaced by percentage point of the previous offerCreate level.
 
 For sell direction p1 = (1 + gridSpace / 100) * p0 and q1 = q0 / (1 + gridSpace / 100)^0.5
 
 For buy direction p1 = p0  / (1 + gridSpace / 100) and q1 = q0 * (1 + gridSpace / 100)^0.5
 
 Pay attention minimum quantity. Ideally minimum quantity should be smaller than (gridSpace / 100 * quantity)
+
+### Full-fixed `fullfixed`
+
+The new unit price is spaced rigidly by gridSpace, e.g. if a buy order with price X is consumed then a new sell order selling the same quantity with price X + gridSpace will be created. If a sell order with price Y is consumed then a buy order with the same quantity and price Y - gridSpace will be created.
+Fixed Full fullfixed
+
+
+## Serviced
+A typical service configuration
+
+```
+[Unit]
+Description=HITBTC BOT one
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=on-abnormal
+RestartSec=10
+ExecStart=/usr/bin/java -jar /home/ubuntu/hitbtc/jars/akka-hitbtc-mmm-assembly-1.3.jar /home/ubuntu/hitbtc/bots/one/config.txt /home/ubuntu/hitbtc/bots/one
+
+[Install]
+WantedBy=multi-user.target
+```
+

@@ -2,6 +2,8 @@ package com.mbcu.hitbtc.mmm
 
 import java.util.logging.Logger
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.mbcu.hitbtc.mmm.actors.MainActor
 import com.mbcu.hitbtc.mmm.models.response.RPCError
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle, MyUtils}
@@ -16,14 +18,14 @@ object Application extends App with MyLogging {
 
   override def main(args: Array[String]) {
     import system.dispatcher
-    implicit val system = akka.actor.ActorSystem("mmm")
-    implicit val materializer = akka.stream.ActorMaterializer()
+    implicit val system: ActorSystem = akka.actor.ActorSystem("mmm")
+    implicit val materializer: ActorMaterializer = akka.stream.ActorMaterializer()
 
-    if (args.length != 1){
-      println("Requires one argument : config file path")
+    if (args.length != 2){
+      println("Requires two arguments : <config file path>  <log directory path>")
       System.exit(-1)
     }
-
+    MyLoggingSingle.init(args(1))
     info(s"START UP ${MyUtils.date()}")
 
     var mainActor = system.actorOf(Props(new MainActor(args(0))), name = "main")

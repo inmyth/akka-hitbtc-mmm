@@ -6,6 +6,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSocketState}
 import akka.event.{EventBus, SubchannelClassification}
 import com.mbcu.hitbtc.mmm.actors.WsActor._
+import com.mbcu.hitbtc.mmm.utils.MyLogging
 import com.neovisionaries.ws.client
 import play.api.libs.json.{JsValue, Json}
 
@@ -21,43 +22,40 @@ object WsActor {
   case class WsGotText(text: String)
 }
 
-class WsActor(url: String) extends Actor {
+class WsActor(url: String) extends Actor with MyLogging{
 
 private var ws : Option[com.neovisionaries.ws.client.WebSocket] = None
 private var main: Option[ActorRef] = None
 
   override def receive: Receive = {
 
-    case "start" => {
+    case "start" =>
         main = Some(sender)
         val factory = new WebSocketFactory
         val websocket = factory.createSocket(url)
         websocket.addListener(ScalaWebSocketListener)
         websocket.connect()
         ws = Some(websocket)
-    }
 
-    case SendJs(jsValue) => {
+    case SendJs(jsValue) =>
       val json : String = Json.stringify(jsValue)
 
       ws match {
         case Some(webSocket) => webSocket.sendText(json)
         case _ => println("WSActor#SendJs : No Websocket")
       }
-    }
-
 
   }
 
   object ScalaWebSocketListener extends WebSocketListener {
 
     override def onConnected(websocket: client.WebSocket, headers: util.Map[String, util.List[String]]): Unit = {
-      println("Connected to " + url)
-      main map (_ ! WsConnected)
+      info("Connected to " + url)
+      main foreach (_ ! WsConnected)
     }
 
-    def onTextMessage(websocket: com.neovisionaries.ws.client.WebSocket, data: String) = {
-      main map(_ ! WsGotText(data))
+    def onTextMessage(websocket: com.neovisionaries.ws.client.WebSocket, data: String) : Unit = {
+      main foreach (_ ! WsGotText(data))
     }
 
     override def onStateChanged(websocket: client.WebSocket, newState: WebSocketState): Unit = ???

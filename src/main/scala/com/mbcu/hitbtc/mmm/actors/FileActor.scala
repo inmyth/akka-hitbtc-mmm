@@ -11,6 +11,8 @@ import java.nio.file.StandardWatchEventKinds._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import play.api.libs.json.{JsResult, Json}
 
+import scala.util.Try
+
 object FileActor {
   def props(path : String): Props = Props(new FileActor(path))
 }
@@ -25,8 +27,8 @@ class FileActor(path : String) extends Actor {
       parents = Some(sender)
       val source = scala.io.Source.fromFile(path)
       val rawJson = try source.mkString finally source.close()
-      val config: Config = Json.parse(rawJson).as[Config]
-      parents.foreach(_ ! ConfigReady(config))
+      val config: Try[Config] = Try(Json.parse(rawJson).as[Config])
+      parents foreach (_ ! ConfigReady(config))
 
     case "listen" =>
       val fileMonitorActor = context.actorOf(MonitorActor(concurrency = 2))

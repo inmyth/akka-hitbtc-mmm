@@ -8,8 +8,9 @@ import com.mbcu.hitbtc.mmm.models.internal.Bot
 import com.mbcu.hitbtc.mmm.models.request.{NewOrder, NewOrderParam}
 import com.mbcu.hitbtc.mmm.models.response.Order
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Movement.Movement
+import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Strategies
 import com.mbcu.hitbtc.mmm.utils.MyUtils
-import play.api.libs.json.Format
+import play.api.libs.json.{Format, Reads, Writes}
 
 import scala.util.Random
 
@@ -24,12 +25,20 @@ object Strategy {
     val UP, DOWN  = Value
   }
 
-  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean, strategy : String) : Seq[NewOrder] = {
+  object Strategies extends Enumeration {
+    type Strategies = Value
+    val ppt, fullfixed = Value
+
+    implicit val strategiesReads = Reads.enumNameReads(Strategies)
+    implicit val strategiesWrites = Writes.enumNameWrites
+  }
+
+  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean, strategy : Strategies) : Seq[NewOrder] = {
     var range = 0
 
     strategy match {
-      case "ppt" => range = if(isPulledFromOtherSide) 3 else 2
-      case "full" => range = if(isPulledFromOtherSide) 2 else 1
+      case Strategies.ppt => range = if(isPulledFromOtherSide) 3 else 2
+      case Strategies.fullfixed => range = if(isPulledFromOtherSide) 2 else 1
       case _ => 0
     }
 
@@ -37,10 +46,10 @@ object Strategy {
       .map(n => {
         var rate : Option[BigDecimal] = None
         strategy match {
-          case "ppt" =>
+          case Strategies.ppt =>
             val mtp = ONE + gridSpace(mc) / CENT
             rate = Some(Collections.nCopies(n, ONE).stream().reduce((x, y) => x * mtp).get())
-          case "full" => rate = Some(gridSpace * n)
+          case Strategies.fullfixed => rate = Some(gridSpace * n)
           case _ => rate = None
         }
         rate
@@ -51,8 +60,8 @@ object Strategy {
           case Some(r) =>
             val movement = if (side == "buy") Movement.DOWN else Movement.UP
             strategy match {
-              case "ppt" => p1q1 = Some(ppt(unitPrice0, qty0, r, qtyScale, movement))
-              case "full" => p1q1 = Some(step(unitPrice0, qty0, r, qtyScale, movement))
+              case Strategies.ppt => p1q1 = Some(ppt(unitPrice0, qty0, r, qtyScale, movement))
+              case Strategies.fullfixed => p1q1 = Some(step(unitPrice0, qty0, r, qtyScale, movement))
               case _ => p1q1 = None
             }
           case _ => p1q1 = None
@@ -74,7 +83,7 @@ object Strategy {
 
   }
 
-  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : String, strategy : String) : Seq[NewOrder] = {
+  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : String, strategy : Strategies) : Seq[NewOrder] = {
     val newSide = if (side == "buy") "sell" else "buy"
     seed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy)
   }
