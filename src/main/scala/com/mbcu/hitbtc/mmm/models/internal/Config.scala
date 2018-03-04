@@ -12,7 +12,7 @@ object Credentials {
 
 }
 
-case class Env(email : String, logSeconds : Int)
+case class Env(email : Seq[String], logSeconds : Int)
 object Env {
   implicit val jsonFormat = Json.format[Env]
 }
@@ -25,6 +25,8 @@ buyGridLevels     : Int,
 sellGridLevels    : Int,
 buyOrderQuantity  : BigDecimal,
 sellOrderQuantity : BigDecimal,
+maxPrice          : Option[BigDecimal],
+minPrice          : Option[BigDecimal],
 qtyScale          : Int,
 strategy          : Strategies
 
@@ -42,6 +44,8 @@ object Bot {
         "sellGridLevels" -> bot.sellGridLevels,
         "buyOrderQuantity" -> bot.buyOrderQuantity,
         "sellOrderQuantity" -> bot.sellOrderQuantity,
+        "maxPrice" -> bot.maxPrice,
+        "minPrice" -> bot.minPrice,
         "qtyScale" -> bot.qtyScale,
         "strategy" -> bot.strategy
       )
@@ -55,6 +59,8 @@ object Bot {
       (JsPath \ "sellGridLevels").read[Int] and
       (JsPath \ "buyOrderQuantity").read[BigDecimal] and
       (JsPath \ "sellOrderQuantity").read[BigDecimal] and
+      (JsPath \ "maxPrice").readNullable[BigDecimal] and
+      (JsPath \ "minPrice").readNullable[BigDecimal] and
       (JsPath \ "qtyScale").read[Int] and
       (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)

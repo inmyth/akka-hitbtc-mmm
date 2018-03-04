@@ -6,7 +6,8 @@ import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.StateActor.{SendNewOrder, SmartSort}
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
-import com.mbcu.hitbtc.mmm.models.response.Order
+import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
+import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
 
 object StateActor {
@@ -44,7 +45,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
     case SmartSort(ordersOption : Option[Seq[Order]]) =>
       ordersOption match {
         case Some(orders) =>
-          var res = Map.empty[String, String]
+          var res = Map.empty[String, Side]
           orders foreach (order => {
             if (!res.contains(order.symbol)){
               res += (order.symbol -> order.side)
@@ -52,7 +53,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
             else {
               val e = res(order.symbol)
               if (e != order.side){
-                res += (order.symbol -> "both")
+                res += (order.symbol -> Side.all)
               }
             }
           })

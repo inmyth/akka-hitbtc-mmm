@@ -1,11 +1,12 @@
 package com.mbcu.hitbtc.mmm.actors
 
-import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
 import akka.pattern.ask
 import akka.util.Timeout
 
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
+import akka.dispatch.MonitorableThreadFactory
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
 import com.mbcu.hitbtc.mmm.actors.WsActor._
@@ -16,7 +17,7 @@ import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle}
 import com.sun.xml.internal.ws.api.Cancelable
 import play.api.libs.json.Json
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -25,6 +26,8 @@ object MainActor {
   def props(configPath : String): Props = Props(new MainActor(configPath))
 
   case class ConfigReady(config : Try[Config])
+
+  case class Shutdown(code :Int)
 
 }
 
@@ -115,15 +118,15 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case ErrorSymbol(er, id) =>
       logError(er, id)
-      System.exit(-1)
+      self ! Shutdown(-1)
 
     case ErrorAuthFailed(er, id) =>
       logError(er, id)
-      System.exit(-1)
+      self ! Shutdown(-1)
 
     case ErrorServer(er, id) =>
       logError(er, id)
-      System.exit(1)
+      self ! Shutdown(1)
 
     case wsGotText : WsGotText =>
       parser match {
@@ -131,7 +134,10 @@ class MainActor(configPath : String) extends Actor with MyLogging {
         case _ => warn("MainActor#wsGotText : _")
       }
 
-
+    case Shutdown(code) =>
+      println("Stopping application")
+      implicit val executionContext: ExecutionContext = context.system.dispatcher
+      context.system.scheduler.scheduleOnce(Duration.Zero)(System.exit(code))
   }
 
   def logError (er : RPCError, id : Option[String]) : Unit = {

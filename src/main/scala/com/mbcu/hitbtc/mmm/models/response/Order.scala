@@ -2,8 +2,19 @@ package com.mbcu.hitbtc.mmm.models.response
 
 import akka.http.scaladsl.model.DateTime
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
+import com.mbcu.hitbtc.mmm.models.response.Side.Side
+import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Value
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
+
+object Side extends Enumeration {
+  type Side = Value
+  val buy, sell, all = Value
+
+  implicit val sideRead = Reads.enumNameReads(Side)
+  implicit val sideWrite = Writes.enumNameWrites
+  def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
+}
 
 object Order {
   implicit val jsonFormat = Json.format[Order]
@@ -38,7 +49,7 @@ object Order {
         (JsPath \ "id").read[String] and
         (JsPath \ "clientOrderId").read[String] and
         (JsPath \ "symbol").read[String] and
-        (JsPath \ "side").read[String] and
+        (JsPath \ "side").read[Side] and
         (JsPath \ "status").read[String] and
         (JsPath \ "type").read[String] and
         (JsPath \ "timeInForce").read[String] and
@@ -73,7 +84,7 @@ case class Order (
   id : String,
   clientOrderId : String,
   symbol : String,
-  side : String,
+  side : Side,
   status : String,
   `type` : String,
   timeInForce : String,

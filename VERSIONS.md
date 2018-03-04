@@ -1,3 +1,8 @@
+1.4
+- added min max prices
+- enumerated Side
+- fixed shutdown mechanism
+
 1.3
 - enumerated strategies
 - added program argument for log dir
@@ -42,7 +47,6 @@
 
 ## TODO
 - [x] test run ppt
-- [] check all senders()
 - [x] handle not enough fund response
 - [x] handle smaller than minimum trade price response
 - [x] seed will start after init
@@ -55,4 +59,8 @@
 - [x] update config and readme for minimum trade quantity
 - [x] implement rounding over min trade quantity
 - [x] implement full strategy
-- [] add max min price
+- [x] limit by max min prices
+- [x] enumerate side
+- [] check all senders()
+- [] aws email sender
+- [] ws listeners handling

@@ -73,6 +73,8 @@ ETH : minimum quantity = 0.001 ETH -> scale = 3
 
 DOGE : minimum quantity = 1000 DOGE -> scale = -3
 
+**maxPrice and minPrice (BigDecimal) (Optional)**
+Maximum and minimum price the bot will operate on
 
 **strategy (String)**
 

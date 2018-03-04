@@ -6,7 +6,8 @@ import java.util.stream.IntStream
 
 import com.mbcu.hitbtc.mmm.models.internal.Bot
 import com.mbcu.hitbtc.mmm.models.request.{NewOrder, NewOrderParam}
-import com.mbcu.hitbtc.mmm.models.response.Order
+import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
+import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Movement.Movement
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Strategies
 import com.mbcu.hitbtc.mmm.utils.MyUtils
@@ -19,6 +20,7 @@ object Strategy {
   val ZERO = BigDecimal("0")
   val ONE = BigDecimal("1")
   val CENT = BigDecimal("100")
+  val INFINITY = BigDecimal("1e60")
 
   object Movement extends Enumeration {
     type Movement = Value
@@ -33,7 +35,7 @@ object Strategy {
     implicit val strategiesWrites = Writes.enumNameWrites
   }
 
-  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side : String, isPulledFromOtherSide : Boolean, strategy : Strategies) : Seq[NewOrder] = {
+  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,  maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
     var range = 0
 
     strategy match {
@@ -58,7 +60,7 @@ object Strategy {
         var p1q1 : Option[(BigDecimal, BigDecimal)] = None
         rate match {
           case Some(r) =>
-            val movement = if (side == "buy") Movement.DOWN else Movement.UP
+            val movement = if (side == Side.buy) Movement.DOWN else Movement.UP
             strategy match {
               case Strategies.ppt => p1q1 = Some(ppt(unitPrice0, qty0, r, qtyScale, movement))
               case Strategies.fullfixed => p1q1 = Some(step(unitPrice0, qty0, r, qtyScale, movement))
@@ -79,13 +81,21 @@ object Strategy {
       .collect{case Some(p) => p}
       .filter(_.price > ZERO)
       .filter(_.quantity > ZERO)
+      .filter(minPrice match {
+        case Some(mp) => _.price >= mp
+        case _ => _.price > ZERO
+      })
+      .filter(maxPrice match {
+        case Some(mp) => _.price <= mp
+        case None => _.price < INFINITY
+      })
       .map(p => NewOrder(p.clientOrderId, p))
 
   }
 
-  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : String, strategy : Strategies) : Seq[NewOrder] = {
-    val newSide = if (side == "buy") "sell" else "buy"
-    seed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy)
+  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : Side, strategy : Strategies,  maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
+    val newSide = if (side == Side.buy) Side.sell else Side.buy
+    seed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, maxPrice, minPrice)
   }
 
   def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={

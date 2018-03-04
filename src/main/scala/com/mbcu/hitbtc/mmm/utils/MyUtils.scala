@@ -5,6 +5,9 @@ import java.text.SimpleDateFormat
 import java.time.{LocalDateTime, ZoneId}
 import java.util.{Date, SimpleTimeZone, TimeZone}
 
+import com.mbcu.hitbtc.mmm.models.response.Side
+import com.mbcu.hitbtc.mmm.models.response.Side.Side
+
 import scala.math.BigDecimal.RoundingMode
 
 
@@ -40,7 +43,7 @@ object MyUtils {
 //    pair + dateForId()
 //  }
 
-  def clientOrderId(pair : String, side : String): String ={
+  def clientOrderId(pair : String, side : Side): String ={
     val random = scala.util.Random.alphanumeric.take(15).mkString
     val hash = sha256Hash(random + System.currentTimeMillis()).substring(0, 18)
     s"$pair.$side.$hash"
@@ -50,8 +53,12 @@ object MyUtils {
     id.split("[.]").lift(0)
   }
 
-  def sideFromId(id : String) : Option[String] = {
-    id.split("[.]").lift(1)
+  def sideFromId(id : String) : Option[Side] = {
+    val str = id.split("[.]").lift(1)
+    str match {
+      case Some(s) => Side.withNameOpt(s)
+      case _ => None
+    }
   }
 
   def roundCeil(a : BigDecimal, scale : Int): BigDecimal ={

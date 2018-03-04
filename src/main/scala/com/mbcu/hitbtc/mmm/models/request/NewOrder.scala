@@ -1,11 +1,12 @@
 package com.mbcu.hitbtc.mmm.models.request
 
 import com.mbcu.hitbtc.mmm.models.response.Order
+import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 
-case class NewOrderParam (clientOrderId : String, symbol : String, side : String, price : BigDecimal, quantity: BigDecimal)
+case class NewOrderParam (clientOrderId : String, symbol : String, side : Side, price : BigDecimal, quantity: BigDecimal)
 object NewOrderParam {
   implicit val jsonFormat = Json.format[NewOrderParam]
 
@@ -23,7 +24,7 @@ object NewOrderParam {
     implicit val walletReads: Reads[NewOrderParam] = (
       (JsPath \ "clientOrderId").read[String] and
       (JsPath \ "symbol").read[String] and
-      (JsPath \ "side").read[String] and
+      (JsPath \ "side").read[Side] and
       (JsPath \ "price").read[BigDecimal] and
       (JsPath \ "quantity").read[BigDecimal]
       ) (NewOrderParam.apply _)

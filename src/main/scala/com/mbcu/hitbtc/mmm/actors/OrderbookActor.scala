@@ -6,7 +6,8 @@ import com.mbcu.hitbtc.mmm.actors.ParserActor.{OrderCancelled, OrderFilled, Orde
 import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
 import com.mbcu.hitbtc.mmm.models.internal.{Bot, Config}
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
-import com.mbcu.hitbtc.mmm.models.response.Order
+import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
+import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.sequences.Strategy
 import com.mbcu.hitbtc.mmm.traits.OrderbookTrait
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
@@ -20,7 +21,7 @@ object OrderbookActor {
 
   case class InitOrder(order : Order)
 
-  case class Sort(side : String)
+  case class Sort(side : Side)
 
   case class CancelInvalidOrder(clientOrderId : String)
 
@@ -38,12 +39,10 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case InitOrder(order) => add(order)
 
     case "init orders completed" =>
-      sort("all")
-      balancer("all") foreach (no => sendOrder(no, "seed"))
+      sort(Side.all)
+      balancer(Side.all) foreach (no => sendOrder(no, "seed"))
 
     case "log orderbooks" => info(dump())
-
-    case Sort(side) => sort("all")
 
     case CancelInvalidOrder(id) =>
       MyUtils.sideFromId(id) match {
@@ -78,33 +77,33 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   def add(order : Order) : Unit = {
     order.side match {
-        case "buy" => buys += (order.clientOrderId -> order)
-        case "sell" => sels += (order.clientOrderId -> order)
+        case Side.buy => buys += (order.clientOrderId -> order)
+        case Side.sell => sels += (order.clientOrderId -> order)
         case _ => warn(s"OrderbookActor#add unrecognized side ${order.side}")
     }
   }
 
-  def remove(side : String, id : String) : Unit = {
+  def remove(side : Side, id : String) : Unit = {
     side match {
-      case "buy" => buys.remove(id)
-      case "sell" => sels.remove(id)
+      case Side.buy => buys.remove(id)
+      case Side.sell => sels.remove(id)
       case _ => warn(s"OrderbookActor#CancelInvalidOrder _ _ $id")
     }
   }
 
   def remove(order : Order) : Unit = {
     order.side match {
-      case "buy" => buys -=  order.clientOrderId
-      case "sell" => sels -= order.clientOrderId
+      case Side.buy => buys -=  order.clientOrderId
+      case Side.sell => sels -= order.clientOrderId
       case _ => warn(s"OrderbookActor#remove unrecognized side ${order.side}")
     }
   }
 
 
-  def sort(side : String) : Unit = {
+  def sort(side : Side) : Unit = {
     side match {
-      case "buy" => sortedBuys = sortBuys(buys)
-      case "sell" => sortedSels = sortSels(sels)
+      case Side.buy => sortedBuys = sortBuys(buys)
+      case Side.sell => sortedSels = sortSels(sels)
       case _ =>
         sortedBuys = sortBuys(buys)
         sortedSels = sortSels(sels)
@@ -113,67 +112,70 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   }
 
   def counter(order : Order) : Seq[NewOrder] = {
-    Strategy.counter(order.quantity, order.price, bot.qtyScale, order.symbol, bot.gridSpace, order.side, bot.strategy )
+    Strategy.counter(order.quantity, order.price, bot.qtyScale, order.symbol, bot.gridSpace, order.side, bot.strategy, bot.maxPrice, bot.minPrice)
   }
 
-  def balancer(side : String) : Seq[NewOrder] = {
+  def balancer(side : Side) : Seq[NewOrder] = {
     var newOrders : Seq[NewOrder] = Seq.empty
 
-    def matcher(side : String) : Seq[NewOrder] = {
-      side match {
-        case "buy" =>
-          val buySeed = seed("buy")
-          buySeed.foreach(no => saveSeed("buy", no))
-          buySeed
-        case "sell" =>
-          val selSeed = seed("sell")
-          selSeed.foreach(no => saveSeed("sell", no))
-          selSeed
-      }
+    def matcher(side : Side) : Seq[NewOrder] = {
+      val seeds = seed(side)
+      seeds.foreach(no => saveSeed(side, no))
+      seeds
+//      side match {
+//        case Side.buy =>
+//          val buySeed = seed(Side.buy)
+//          buySeed.foreach(no => saveSeed(Side.buy, no))
+//          buySeed
+//        case Side.sell =>
+//          val selSeed = seed(Side.sell)
+//          selSeed.foreach(no => saveSeed(Side.sell, no))
+//          selSeed
+//      }
     }
     side match {
-      case "buy"  => newOrders ++= matcher("buy")
-      case "sell" => newOrders ++= matcher("sell")
+      case Side.buy  => newOrders ++= matcher(Side.buy)
+      case Side.sell => newOrders ++= matcher(Side.sell)
       case _ =>
-        newOrders ++= matcher("buy")
-        newOrders ++= matcher("sell")
+        newOrders ++= matcher(Side.buy)
+        newOrders ++= matcher(Side.sell)
     }
     newOrders
   }
 
-  def seed(side : String) : Seq[NewOrder] = {
+  def seed(side : Side) : Seq[NewOrder] = {
     val preSeed = getPreSeed(side)
     if (preSeed._1 > 0){
-      Strategy.seed(preSeed._2, preSeed._3, bot.qtyScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy)
+      Strategy.seed(preSeed._2, preSeed._3, bot.qtyScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy, bot.maxPrice, bot.minPrice)
     }
     else {
       Seq.empty[NewOrder]
     }
   }
 
-  def saveSeed(side : String, o : NewOrder) : Unit = {
+  def saveSeed(side : Side, o : NewOrder) : Unit = {
       side match {
-        case "buy" => buys.put(o.params.clientOrderId, Order.tempNewOrder(o))
-        case "sell" => sels.put(o.params.clientOrderId, Order.tempNewOrder(o))
+        case Side.buy => buys.put(o.params.clientOrderId, Order.tempNewOrder(o))
+        case Side.sell => sels.put(o.params.clientOrderId, Order.tempNewOrder(o))
         case _ => println("OrderbookActor#seed _")
       }
 
   }
 
-  def getPreSeed(side : String) : (Int, BigDecimal, BigDecimal, Boolean) = {
+  def getPreSeed(side : Side) : (Int, BigDecimal, BigDecimal, Boolean) = {
     var qty0 : BigDecimal = BigDecimal("0")
     var unitPrice0 : BigDecimal = BigDecimal("0")
     var isPulledFromOtherSide : Boolean = false
     var levels : Int = 0
 
     if (sortedBuys.isEmpty && sortedSels.isEmpty){
-       qty0 = if (side == "buy") bot.buyOrderQuantity else bot.sellOrderQuantity
+       qty0 = if (side == Side.buy) bot.buyOrderQuantity else bot.sellOrderQuantity
        unitPrice0 = bot.startMiddlePrice
-       levels = if (side == "buy") bot.buyGridLevels else bot.sellGridLevels
+       levels = if (side == Side.buy) bot.buyGridLevels else bot.sellGridLevels
     }
     else {
       side match {
-        case "buy" =>
+        case Side.buy =>
           if (sortedBuys.isEmpty){
             levels = bot.buyGridLevels
             getTopSel foreach(o => {
@@ -189,7 +191,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
               unitPrice0 = o.price
             })
           }
-        case "sell" =>
+        case Side.sell =>
           if (sortedSels.isEmpty){
             levels = bot.sellGridLevels
             getTopBuy foreach(o => {
