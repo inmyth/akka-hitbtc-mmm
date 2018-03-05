@@ -12,9 +12,27 @@ object Credentials {
 
 }
 
-case class Env(email : Seq[String], logSeconds : Int)
+case class Env(emails : Option[Seq[String]], sesKey : Option[String], sesSecret : Option[String], logSeconds : Int)
 object Env {
   implicit val jsonFormat = Json.format[Env]
+
+  object Implicits {
+    implicit val envWrites = new Writes[Env] {
+      def writes(env: Env): JsValue = Json.obj(
+        "emails" -> env.emails,
+        "sesKey" -> env.sesKey,
+        "sesSecret" -> env.sesSecret,
+        "logSeconds" -> env.logSeconds
+      )
+    }
+
+    implicit val envReads: Reads[Env] = (
+      (JsPath \ "emails").readNullable[Seq[String]] and
+      (JsPath \ "sesKey").readNullable[String] and
+      (JsPath \ "sesSecret").readNullable[String] and
+      (JsPath \ "logSeconds").read[Int]
+      ) (Env.apply _)
+  }
 }
 
 case class Bot (

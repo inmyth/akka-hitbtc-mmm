@@ -1,3 +1,8 @@
+>1.5
+> added email reporting, working on email send - shutdown future
+- actorized error handling in MainActor
+
+
 1.4
 - added min max prices
 - enumerated Side

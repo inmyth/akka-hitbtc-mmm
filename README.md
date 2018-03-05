@@ -35,6 +35,12 @@ HS256 signature. Use https://www.freeformatter.com/hmac-generator.html to genera
 
 ### Env
 
+**(Optional) Emails (String[]), sesKey and sesSecret (String)**
+
+Emails to report to. Requires AWS SES to function.
+
+`sesKey` and `sesSecret` are IAM credentials with SES sending email permission.
+
 **logSeconds (int)**
 
 Interval in seconds of orderbook log
@@ -73,7 +79,7 @@ ETH : minimum quantity = 0.001 ETH -> scale = 3
 
 DOGE : minimum quantity = 1000 DOGE -> scale = -3
 
-**maxPrice and minPrice (BigDecimal) (Optional)**
+**(Optional) maxPrice and minPrice (BigDecimal)**
 Maximum and minimum price the bot will operate on
 
 **strategy (String)**

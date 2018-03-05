@@ -1,11 +1,13 @@
 {
     "credentials" : {
-        "pKey" : "API KEY",
+        "pKey" : "HitBTC API KEY",
         "nonce": "abcabc",
-        "signature": "HS256(SECRET KEY + nonce)"
+        "signature": "HS256(secret = HitBTC SECRET KEY, randomText = nonce)"
     },
     "env": {
-        "email" : [],
+        "emails" : ["martin.bcu@gmail.com"],
+        "sesKey" : "AWS SES access key",
+        "sesSecret" : "AWS SES access secret key",
         "logSeconds" : 10
     },
     "bots" : [
