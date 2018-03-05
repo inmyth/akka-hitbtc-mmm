@@ -9,7 +9,7 @@ import akka.dispatch.ExecutionContexts._
 import akka.dispatch.MonitorableThreadFactory
 import com.amazonaws.services.simpleemail.model.SendEmailResult
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
-import com.mbcu.hitbtc.mmm.actors.SesActor.SendError
+import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
 import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
@@ -63,6 +63,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
         case Success(cfg) =>
           config = Some(cfg)
           ses = Some(context.actorOf(Props(new SesActor(cfg.env.sesKey, cfg.env.sesSecret, cfg.env.emails)), name = "ses"))
+          ses foreach (_ ! "start")
           state = Some(context.actorOf(Props(new StateActor(cfg)), name = "state"))
           state foreach (_ ! "start")
           ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws")), name = "ws"))
@@ -148,19 +149,43 @@ class MainActor(configPath : String) extends Actor with MyLogging {
       val s = s"""${er.toString}
                  |id $id""".stripMargin
       error(s)
+      ses foreach(_ ! SendError(s, code))
 
-      implicit val timeout: Timeout = Timeout(5 seconds)
-      ses foreach (a => {
-        val f = a ? SendError(s)
-        val result = Await.ready(f, timeout.duration).value.get
-        result match {
-          case Success(t) => info("Email Sent")
-          case Failure(e) => info("Email Not Sent " + e.getMessage)
-        }
-        code match {
-          case Some(c) => self ! Shutdown(c)
-        }
-      })
+//      implicit val timeout: Timeout = Timeout(10 seconds)
+//      ses foreach (_ => {
+//        val f = a ? SendError(s)
+////        val result = Await.ready(f, timeout.duration).value.get.asInstanceOf[Option[Future[SendEmailResult]]]
+//        f map(result => {
+//
+//            code match {
+//              case Some(c) => self ! Shutdown(c)
+//            }
+//        })
+
+
+//          case Some(r) => r match {
+//            case Success(t) => info("Email Sent")
+//            case Failure(e) => info("Email Not Sent " + e.getMessage)
+//          }
+
+//          case _ => info("MainActor#HandleErro, no client")
+//        })
+//        code match {
+//          case Some(c) => self ! Shutdown(c)
+//        }
+//      })
+
+    case MailSent(t, shutdownCode) =>
+      t match {
+        case Success(v) => info("Email Sent")
+        case Failure(c) => info(
+          s"""Failed sending email
+            |${c.getMessage}
+          """.stripMargin)
+      }
+      shutdownCode match {
+        case Some(code) => self ! Shutdown(code)
+      }
 
     case Shutdown(code) =>
       info("Stopping application")

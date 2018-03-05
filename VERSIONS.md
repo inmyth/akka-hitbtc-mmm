@@ -1,7 +1,9 @@
 >1.5
 > added email reporting, working on email send - shutdown future
 - actorized error handling in MainActor
-
+- updated gitigore (*.log)
+- updated readme (email config)
+- updated Config
 
 1.4
 - added min max prices
@@ -69,3 +71,4 @@
 - [] check all senders()
 - [] aws email sender
 - [] ws listeners handling
+- [] need to check email sender on small errors
