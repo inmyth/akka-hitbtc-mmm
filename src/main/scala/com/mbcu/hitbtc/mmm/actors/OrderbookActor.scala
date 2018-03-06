@@ -122,16 +122,6 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       val seeds = seed(side)
       seeds.foreach(no => saveSeed(side, no))
       seeds
-//      side match {
-//        case Side.buy =>
-//          val buySeed = seed(Side.buy)
-//          buySeed.foreach(no => saveSeed(Side.buy, no))
-//          buySeed
-//        case Side.sell =>
-//          val selSeed = seed(Side.sell)
-//          selSeed.foreach(no => saveSeed(Side.sell, no))
-//          selSeed
-//      }
     }
     side match {
       case Side.buy  => newOrders ++= matcher(Side.buy)
@@ -242,13 +232,13 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
      builder.append(s"buys : ${buys.size}")
     builder.append(System.getProperty("line.separator"))
     sortedBuys.foreach(b => {
-      builder.append(s"${b.clientOrderId} quantity:${b.quantity} price:${b.price} filled:${b.cumQuantity}")
+      builder.append(s"id:${b.clientOrderId} quantity:${b.quantity} price:${b.price} filled:${b.cumQuantity}")
       builder.append(System.getProperty("line.separator"))
     })
     builder.append(s"sells : ${sels.size}")
     builder.append(System.getProperty("line.separator"))
     sortedSels.foreach(s => {
-      builder.append(s"${s.clientOrderId} quantity:${s.quantity} price:${s.price} filled:${s.cumQuantity}")
+      builder.append(s"id:${s.clientOrderId} quantity:${s.quantity} price:${s.price} filled:${s.cumQuantity}")
       builder.append(System.getProperty("line.separator"))
     })
     builder.toString()

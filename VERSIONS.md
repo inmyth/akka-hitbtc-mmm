@@ -1,9 +1,15 @@
->1.5
-> added email reporting, working on email send - shutdown future
+1.5
+- added email reporting, working on email send - shutdown future
 - actorized error handling in MainActor
 - updated gitigore (*.log)
 - updated readme (email config)
 - updated Config
+- fixed assembly deduplication error between slf4j and commons-logging. https://stackoverflow.com/a/44078655/1014413
+
+Add this on `build.sbt`
+```
+excludeDependencies += "commons-logging" % "commons-logging"
+```
 
 1.4
 - added min max prices
@@ -69,6 +75,8 @@
 - [x] limit by max min prices
 - [x] enumerate side
 - [] check all senders()
-- [] aws email sender
-- [] ws listeners handling
-- [] need to check email sender on small errors
+- [x] aws email sender
+- [x] ws listeners handling
+- [x] need to check email sender on small errors
+- [x] assembly deduplication error
+- [] clean up warnings

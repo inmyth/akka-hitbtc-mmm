@@ -104,8 +104,8 @@ The new unit price is spaced rigidly by gridSpace, e.g. if a buy order with pric
 Fixed Full fullfixed
 
 
-## Serviced
-A typical service configuration
+## Systemd
+- A typical service configuration
 
 ```
 [Unit]
@@ -123,3 +123,6 @@ ExecStart=/usr/bin/java -jar /home/ubuntu/hitbtc/jars/akka-hitbtc-mmm-assembly-1
 WantedBy=multi-user.target
 ```
 
+- Create above file `/lib/systemd/system/hitbtcbot.service`
+
+- Run it `systemctl restart hitbtcbot.service`

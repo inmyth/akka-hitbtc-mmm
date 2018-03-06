@@ -4,7 +4,6 @@ import akka.actor.{Actor, ActorRef, Props}
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.simpleemail.model.SendEmailResult
 import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
-import com.mbcu.hitbtc.mmm.utils.MySES.{cli, tos}
 import jp.co.bizreach.ses.SESClient
 import jp.co.bizreach.ses.models.{Address, Content, Email}
 
@@ -38,8 +37,11 @@ class SesActor(sesKey : Option[String], sesSecret : Option[String], emails : Opt
             case Some(list) =>
               cli = Some(SESClient(key, secret))
               this.tos ++= list map (Address(_))
+            case _ =>
           }
+            case _ =>
         }
+        case _ =>
       }
 
 
@@ -62,8 +64,8 @@ class SesActor(sesKey : Option[String], sesSecret : Option[String], emails : Opt
           case Some(c) =>
             val f = c send email
             f.onComplete(t => main foreach(_ ! MailSent(t, shutdownCode)))
-          //              sender() ! Some(f)
-//          case _ => sender() ! None
+          case _ => println("SesActor#send no client")
+
         }
     }
   }

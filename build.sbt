@@ -1,6 +1,6 @@
 name := "akka-hitbtc-mmm"
 
-version := "1.4"
+version := "1.5"
 
 scalaVersion := "2.12.4"
 
@@ -18,11 +18,11 @@ libraryDependencies ++= Seq(
   "com.neovisionaries" % "nv-websocket-client" % "2.3",
   "com.typesafe.play" %% "play-functional" % "2.6.8",
   "com.beachape.filemanagement" %% "schwatcher" % "0.3.2",
-  "com.amazonaws" % "aws-java-sdk-ses" % "1.11.289",
   "jp.co.bizreach" %% "aws-ses-scala" % "0.0.2",
-
-"com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
+  "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
   "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
   "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
   "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
 )
+
+excludeDependencies += "commons-logging" % "commons-logging"

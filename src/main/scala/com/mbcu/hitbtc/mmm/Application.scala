@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.mbcu.hitbtc.mmm.actors.MainActor
 import com.mbcu.hitbtc.mmm.models.response.RPCError
-import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle, MySES, MyUtils}
+import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle, MyUtils}
 
 import scala.collection.immutable.ListMap
 
@@ -17,7 +17,6 @@ object Application extends App with MyLogging {
   import com.mbcu.hitbtc.mmm.actors.FileActor
 
   override def main(args: Array[String]) {
-    import system.dispatcher
     implicit val system: ActorSystem = akka.actor.ActorSystem("mmm")
     implicit val materializer: ActorMaterializer = akka.stream.ActorMaterializer()
 

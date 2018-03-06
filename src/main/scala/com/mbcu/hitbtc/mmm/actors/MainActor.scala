@@ -15,7 +15,7 @@ import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.{Login, NewOrder, SubscribeReports}
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
-import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle, MySES}
+import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle}
 import com.sun.xml.internal.ws.api.Cancelable
 import play.api.libs.json.Json
 
@@ -31,13 +31,15 @@ object MainActor {
 
   case class Shutdown(code :Int)
 
-  case class HandleError(er : RPCError, id : Option[String], code : Option[Int] = None)
+  case class HandleRPCError(er : RPCError, id : Option[String], code : Option[Int] = None)
+
+  case class HandleError(msg :String, code : Option[Int] = None)
 
 }
 
 class MainActor(configPath : String) extends Actor with MyLogging {
   import com.mbcu.hitbtc.mmm.actors.MainActor._
-  import akka.pattern.ask
+  val ENDPOINT = "wss://api.hitbtc.com/api/2/ws"
   private var config: Option[Config] = None
   private var ws: Option[ActorRef] = None
   private var parser: Option[ActorRef] = None
@@ -45,7 +47,6 @@ class MainActor(configPath : String) extends Actor with MyLogging {
   private var state : Option[ActorRef] = None
   private var ses : Option[ActorRef] = None
   implicit val ec: ExecutionContextExecutor = global
-  val initDone : Boolean = false
 
   override def receive: Receive = {
 
@@ -66,7 +67,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
           ses foreach (_ ! "start")
           state = Some(context.actorOf(Props(new StateActor(cfg)), name = "state"))
           state foreach (_ ! "start")
-          ws = Some(context.actorOf(Props(new WsActor("wss://api.hitbtc.com/api/2/ws")), name = "ws"))
+          ws = Some(context.actorOf(Props(new WsActor(ENDPOINT)), name = "ws"))
           val scheduleActor = context.actorOf(Props(classOf[ScheduleActor]))
           cancellable =Some(
             context.system.scheduler.schedule(
@@ -81,8 +82,11 @@ class MainActor(configPath : String) extends Actor with MyLogging {
     case s : String if s == "log orderbooks" => state foreach (_ forward s)
 
     case WsConnected =>
+      info(s"Connected to $ENDPOINT")
       parser = Some(context.actorOf(Props(new ParserActor(config))))
       self ! "login"
+
+    case WsDisconnected => info(s"Disconnected")
 
     case "login" => config.foreach(c => ws.foreach(_ ! SendJs(Json.toJson(Login.from(c)))))
 
@@ -106,37 +110,31 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case SendNewOrder(newOrder, as) =>
       info(
-        s"""Sending new order as ${as}
+        s"""Sending new order as $as
            |$newOrder""".stripMargin)
       ws foreach (_ ! SendJs(Json.toJson(newOrder)))
 
-    case ErrorNonAffecting(er, id) => self ! HandleError(er, id)
-
+    case ErrorNonAffecting(er, id) => self ! HandleRPCError(er, id)
 
     case ErrorNotEnoughFund(er, id) =>
-      self ! HandleError(er, id)
+      self ! HandleRPCError(er, id)
       state foreach(_ ! ErrorNotEnoughFund(er, id))
 
     case ErrorOrderTooSmall(er, id) =>
-      self ! HandleError(er, id)
+      self ! HandleRPCError(er, id)
       state foreach(_ ! ErrorOrderTooSmall(er, id))
 
     case ErrorCancelGhost(er, id) =>
-      self ! HandleError(er, id)
+      self ! HandleRPCError(er, id)
       state foreach(_ ! ErrorCancelGhost(er, id))
 
-    case ErrorSymbol(er, id) =>
-      self ! HandleError(er, id, Some(-1))
-//      self ! Shutdown(-1)
+    case ErrorSymbol(er, id) => self ! HandleRPCError(er, id, Some(-1))
 
-    case ErrorAuthFailed(er, id) =>
-      self ! HandleError(er, id, Some(-1))
-//      self ! Shutdown(-1)
+    case ErrorAuthFailed(er, id) => self ! HandleRPCError(er, id, Some(-1))
 
-    case ErrorServer(er, id) =>
-      self ! HandleError(er, id, Some(1))
-//      handleError(er, id, Some(1))
-//      self ! Shutdown(1)
+    case ErrorServer(er, id) => self ! HandleRPCError(er, id, Some(1))
+
+    case WSError(er, code) => self ! HandleError(er , code)
 
     case wsGotText : WsGotText =>
       parser match {
@@ -144,36 +142,12 @@ class MainActor(configPath : String) extends Actor with MyLogging {
         case _ => warn("MainActor#wsGotText : _")
       }
 
-
-    case HandleError(er, id, code) =>
+    case HandleRPCError(er, id, code ) =>
       val s = s"""${er.toString}
-                 |id $id""".stripMargin
-      error(s)
-      ses foreach(_ ! SendError(s, code))
+         |id $id""".stripMargin
+      handleError(s, code)
 
-//      implicit val timeout: Timeout = Timeout(10 seconds)
-//      ses foreach (_ => {
-//        val f = a ? SendError(s)
-////        val result = Await.ready(f, timeout.duration).value.get.asInstanceOf[Option[Future[SendEmailResult]]]
-//        f map(result => {
-//
-//            code match {
-//              case Some(c) => self ! Shutdown(c)
-//            }
-//        })
-
-
-//          case Some(r) => r match {
-//            case Success(t) => info("Email Sent")
-//            case Failure(e) => info("Email Not Sent " + e.getMessage)
-//          }
-
-//          case _ => info("MainActor#HandleErro, no client")
-//        })
-//        code match {
-//          case Some(c) => self ! Shutdown(c)
-//        }
-//      })
+    case HandleError(msg, code) => handleError(msg, code)
 
     case MailSent(t, shutdownCode) =>
       t match {
@@ -185,12 +159,19 @@ class MainActor(configPath : String) extends Actor with MyLogging {
       }
       shutdownCode match {
         case Some(code) => self ! Shutdown(code)
+        case _ =>
       }
 
     case Shutdown(code) =>
-      info("Stopping application")
+      info(s"Stopping application, code $code")
       implicit val executionContext: ExecutionContext = context.system.dispatcher
       context.system.scheduler.scheduleOnce(Duration.Zero)(System.exit(code))
   }
+
+  def handleError(s: String, code : Option[Int]) : Unit = {
+    error(s)
+    ses foreach(_ ! SendError(s, code))
+  }
+
 
 }
