@@ -6,9 +6,8 @@ class ScheduleActor extends Actor {
 
   override def receive: Receive = {
 
-    case "log orderbooks" => {
+    case "log orderbooks" =>
       sender() ! "log orderbooks"
-    }
   }
 
 }

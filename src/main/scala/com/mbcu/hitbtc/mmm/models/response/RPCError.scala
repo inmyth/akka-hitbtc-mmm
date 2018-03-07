@@ -1,8 +1,8 @@
 package com.mbcu.hitbtc.mmm.models.response
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 object RPCError {
-  implicit val jsonFormat = Json.format[RPCError]
+  implicit val jsonFormat: OFormat[RPCError] = Json.format[RPCError]
 
 
 }

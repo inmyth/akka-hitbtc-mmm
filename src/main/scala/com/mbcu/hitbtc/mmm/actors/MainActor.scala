@@ -151,7 +151,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case MailSent(t, shutdownCode) =>
       t match {
-        case Success(v) => info("Email Sent")
+        case Success(_) => info("Email Sent")
         case Failure(c) => info(
           s"""Failed sending email
             |${c.getMessage}

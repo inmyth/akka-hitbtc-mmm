@@ -27,7 +27,7 @@ object Application extends App with MyLogging {
     MyLoggingSingle.init(args(1))
     info(s"START UP ${MyUtils.date()}")
 
-    var mainActor = system.actorOf(Props(new MainActor(args(0))), name = "main")
+    val mainActor = system.actorOf(Props(new MainActor(args(0))), name = "main")
     mainActor ! "start"
   }
 

@@ -2,6 +2,7 @@ package com.mbcu.hitbtc.mmm.models.response
 
 import akka.http.scaladsl.model.DateTime
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
+import com.mbcu.hitbtc.mmm.models.response
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Value
 import play.api.libs.json._
@@ -11,16 +12,18 @@ object Side extends Enumeration {
   type Side = Value
   val buy, sell, all = Value
 
-  implicit val sideRead = Reads.enumNameReads(Side)
-  implicit val sideWrite = Writes.enumNameWrites
+  implicit val sideRead: Reads[response.Side.Value] = Reads.enumNameReads(Side)
+  implicit val sideWrite: Writes[Nothing#Value] = Writes.enumNameWrites
   def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
 }
 
 object Order {
-  implicit val jsonFormat = Json.format[Order]
+  implicit val jsonFormat: OFormat[Order] = Json.format[Order]
 
   object Implicits {
-    implicit val orderWrites = new Writes[Order] {
+    implicit val orderWrites: Writes[Order] {
+      def writes(order: Order): JsValue
+    } = new Writes[Order] {
       def writes(order: Order): JsValue = Json.obj(
         "id" -> order.id,
         "clientOrderId" -> order.clientOrderId,

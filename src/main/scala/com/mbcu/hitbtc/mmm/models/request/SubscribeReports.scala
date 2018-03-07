@@ -4,7 +4,7 @@ import play.api.libs.json.{JsValue, Json}
 
 object SubscribeReports {
 
-  def toJsValue() : JsValue = {
+  def toJsValue: JsValue = {
     val str: String =
       """
         |{

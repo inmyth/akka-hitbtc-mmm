@@ -8,10 +8,12 @@ import play.api.libs.functional.syntax._
 
 case class NewOrderParam (clientOrderId : String, symbol : String, side : Side, price : BigDecimal, quantity: BigDecimal)
 object NewOrderParam {
-  implicit val jsonFormat = Json.format[NewOrderParam]
+  implicit val jsonFormat: OFormat[NewOrderParam] = Json.format[NewOrderParam]
 
   object Implicits {
-    implicit val newOrderParamWrites = new Writes[NewOrderParam] {
+    implicit val newOrderParamWrites: Writes[NewOrderParam] {
+      def writes(nwp: NewOrderParam): JsValue
+    } = new Writes[NewOrderParam] {
       def writes(nwp: NewOrderParam): JsValue = Json.obj(
         "clientOrderId" -> nwp.clientOrderId,
         "symbol" -> nwp.symbol,
@@ -34,7 +36,7 @@ object NewOrderParam {
 
 case class NewOrder(id : String, params : NewOrderParam, method : String = "newOrder")
 object NewOrder {
-  implicit val jsonFormat = Json.format[NewOrder]
+  implicit val jsonFormat: OFormat[NewOrder] = Json.format[NewOrder]
 
   def from(id : String, newOrderParam: NewOrderParam) : NewOrder = {
     new NewOrder(id, newOrderParam)

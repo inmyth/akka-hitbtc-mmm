@@ -15,7 +15,7 @@ class StrategyTest extends FunSuite {
   val CENT = BigDecimal("100")
 
   val qty = BigDecimal("1")
-  var price = BigDecimal("10")
+  val price = BigDecimal("10")
   val gridSpace = BigDecimal("1")
   val mtp: BigDecimal = ONE + gridSpace(mc) / CENT
   val XRPscale = 3

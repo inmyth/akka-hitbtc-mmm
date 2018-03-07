@@ -63,8 +63,8 @@ class OrderTest extends FunSuite{
     val param = (obj2Json \ "params").as[Order]
     assert(param.id == "18466003336")
     assert(param.reportType == "trade")
-    assert(param.tradeId == Some(204766318))
-    assert(param.tradeFee == Some(BigDecimal("-0.000000229")))
+    assert(param.tradeId.contains(204766318))
+    assert(param.tradeFee.contains(BigDecimal("-0.000000229")))
     assert(param.status == "filled")
   }
 
@@ -98,8 +98,8 @@ class OrderTest extends FunSuite{
     assert(param.id == "18466003336")
     assert(param.reportType == "trade")
     assert(param.cumQuantity == BigDecimal("9"))
-    assert(param.tradePrice == Some(BigDecimal("0.00009179")))
-    assert(param.tradeQuantity == Some(BigDecimal("9")))
+    assert(param.tradePrice.contains(BigDecimal("0.00009179")))
+    assert(param.tradeQuantity.contains(BigDecimal("9")))
   }
 
   test("ActiveOrders Test ") {

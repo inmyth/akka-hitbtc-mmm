@@ -8,16 +8,18 @@ import play.api.libs.functional.syntax._
 
 case class Credentials (pKey : String, nonce: String, signature : String)
 object Credentials {
-  implicit val jsonFormat = Json.format[Credentials]
+  implicit val jsonFormat: OFormat[Credentials] = Json.format[Credentials]
 
 }
 
 case class Env(emails : Option[Seq[String]], sesKey : Option[String], sesSecret : Option[String], logSeconds : Int)
 object Env {
-  implicit val jsonFormat = Json.format[Env]
+  implicit val jsonFormat: OFormat[Env] = Json.format[Env]
 
   object Implicits {
-    implicit val envWrites = new Writes[Env] {
+    implicit val envWrites: Writes[Env] {
+      def writes(env: Env): JsValue
+    } = new Writes[Env] {
       def writes(env: Env): JsValue = Json.obj(
         "emails" -> env.emails,
         "sesKey" -> env.sesKey,
@@ -50,10 +52,12 @@ strategy          : Strategies
 
 )
 object Bot {
-  implicit val jsonFormat = Json.format[Bot]
+  implicit val jsonFormat: OFormat[Bot] = Json.format[Bot]
 
   object Implicits {
-    implicit val botWrites = new Writes[Bot] {
+    implicit val botWrites: Writes[Bot] {
+      def writes(bot: Bot): JsValue
+    } = new Writes[Bot] {
       def writes(bot: Bot): JsValue = Json.obj(
         "pair" -> bot.pair,
         "startMiddlePrice" -> bot.startMiddlePrice,
@@ -87,6 +91,6 @@ object Bot {
 
 case class Config (credentials: Credentials, env : Env, bots : List[Bot])
 object Config {
-  implicit val jsonFormat = Json.format[Config]
+  implicit val jsonFormat: OFormat[Config] = Json.format[Config]
 
 }

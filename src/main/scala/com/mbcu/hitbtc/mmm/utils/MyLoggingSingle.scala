@@ -31,7 +31,6 @@ object MyLoggingSingle {
     log.setLevel(Level.ALL)
     val timeStamp = sdf.format(new Date())
     sdf.setTimeZone(TimeZone.getTimeZone("Asia/Tokyo"))
-    val rLogPath = if (logPath.endsWith("/")) logPath else logPath + "/"
     val fileName = String.format(logPath + FILE_NAME, timeStamp)
     val fileHandler = new FileHandler(fileName, limit, numLogFiles, true)
     // Create txt Formatter

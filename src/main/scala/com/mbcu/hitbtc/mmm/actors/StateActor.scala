@@ -74,11 +74,11 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
     case OrderExpired(order) =>  context.actorSelection(s"/user/main/state/${order.symbol}") ! OrderCancelled(order)
 
-    case ErrorNotEnoughFund(er, id) => cancelInvalidOrderFromId(id)
+    case ErrorNotEnoughFund(_, id) => cancelInvalidOrderFromId(id)
 
-    case ErrorOrderTooSmall(er, id) => cancelInvalidOrderFromId(id)
+    case ErrorOrderTooSmall(_, id) => cancelInvalidOrderFromId(id)
 
-    case ErrorCancelGhost(er, id) => cancelInvalidOrderFromId(id)
+    case ErrorCancelGhost(_, id) => cancelInvalidOrderFromId(id)
 
   }
 

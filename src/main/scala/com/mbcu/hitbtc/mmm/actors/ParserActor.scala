@@ -52,11 +52,9 @@ object ParserActor extends MyLogging {
 class ParserActor(config : Option[Config]) extends Actor {
   import com.mbcu.hitbtc.mmm.actors.ParserActor._
 
-  private var main : Option[ActorRef] = None
-
   override def receive: Receive = {
 
-    case WsGotText(raw : String) => {
+    case WsGotText(raw : String) =>
       info(
         s"""Raw response
           |$raw
@@ -108,8 +106,6 @@ class ParserActor(config : Option[Config]) extends Actor {
           }
         }
       }
-
-    }
   }
 }
 

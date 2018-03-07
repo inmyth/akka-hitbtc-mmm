@@ -8,7 +8,7 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import akka.NotUsed
 import akka.actor.AbstractActor.Receive
 import akka.dispatch.ExecutionContexts.global
@@ -26,12 +26,12 @@ class WsStreamActor(url :String) extends Actor{
 
   var actorSender: Option[ActorRef] = None
   private var ws : Option[ActorRef] = None
-  implicit val ec = global
+  implicit val ec: ExecutionContextExecutor = global
 
 
   override def receive: Receive = {
 
-    case "start" => {
+    case "start" =>
       actorSender = Some(sender())
 
       implicit val materializer = ActorMaterializer()
@@ -52,15 +52,15 @@ class WsStreamActor(url :String) extends Actor{
             Json.obj("command" -> "")
         }
       }
-/*
-Streams always start flowing from a Source[Out,M1] then can continue through Flow[In,Out,M2] elements or more advanced graph elements to finally be consumed by a Sink[In,M3]
-(ignore the type parameters M1, M2 and M3 for now, they are not relevant to the types of the elements produced/consumed by these classes – they are “materialized types”, which we’ll talk about below)
- */
-      val JsValueToMessageFlow = Flow[Source[JsValue, _]] map { jsValueStream =>
-        TextMessage.Streamed(jsValueStream.map(msg => {
-          Json.stringify(msg)
-        }))
-      }
+      /*
+            Streams always start flowing from a Source[Out,M1] then can continue through Flow[In,Out,M2] elements or more advanced graph elements to finally be consumed by a Sink[In,M3]
+            (ignore the type parameters M1, M2 and M3 for now, they are not relevant to the types of the elements produced/consumed by these classes – they are “materialized types”, which we’ll talk about below)
+             */
+            val JsValueToMessageFlow = Flow[Source[JsValue, _]] map { jsValueStream =>
+              TextMessage.Streamed(jsValueStream.map(msg => {
+                Json.stringify(msg)
+              }))
+            }
       val messageSink: Sink[Message, NotUsed] =
         Flow[Message]
           .map(message => println(s"Received text message: [$message]"))
@@ -103,7 +103,7 @@ Streams always start flowing from a Source[Out,M1] then can continue through Flo
           .run()
 
 
-//      def sinkFlow = Http().webSocketClientFlow(WebSocketRequest(url))
+      //      def sinkFlow = Http().webSocketClientFlow(WebSocketRequest(url))
 
 
       val connected = upgradeResponse.flatMap { upgradeResponse: WebSocketUpgradeResponse =>
@@ -116,7 +116,6 @@ Streams always start flowing from a Source[Out,M1] then can continue through Flo
       }
 
       this.ws = Some(ws)
-    }
 
   }
 

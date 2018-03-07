@@ -21,7 +21,6 @@ object MyUtils {
       return x
     }
 
-    val b2 = BigDecimal(2)
     var tempScale = 16
     while(tempScale < scale){
       x = x - (x * x - a)(mc) / (2 * x)
