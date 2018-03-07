@@ -31,8 +31,8 @@ object Strategy {
     type Strategies = Value
     val ppt, fullfixed = Value
 
-    implicit val strategiesReads: Reads[Strategy.Strategies.Value] = Reads.enumNameReads(Strategies)
-    implicit val strategiesWrites: Writes[Nothing#Value] = Writes.enumNameWrites
+    implicit val strategiesReads = Reads.enumNameReads(Strategies)
+    implicit val strategiesWrites = Writes.enumNameWrites
   }
 
   def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,  maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
@@ -41,7 +41,7 @@ object Strategy {
     strategy match {
       case Strategies.ppt => range = if(isPulledFromOtherSide) 3 else 2
       case Strategies.fullfixed => range = if(isPulledFromOtherSide) 2 else 1
-      case _ =>
+      case _ => 0
     }
 
     (range until (levels + range))
@@ -50,7 +50,7 @@ object Strategy {
         strategy match {
           case Strategies.ppt =>
             val mtp = ONE + gridSpace(mc) / CENT
-            rate = Some(Collections.nCopies(n, ONE).stream().reduce((x, _) => x * mtp).get())
+            rate = Some(Collections.nCopies(n, ONE).stream().reduce((x, y) => x * mtp).get())
           case Strategies.fullfixed => rate = Some(gridSpace * n)
           case _ => rate = None
         }

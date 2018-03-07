@@ -67,6 +67,7 @@ class SesActor(sesKey : Option[String], sesSecret : Option[String], emails : Opt
           case _ => println("SesActor#send no client")
 
         }
+      case _ =>
     }
   }
 

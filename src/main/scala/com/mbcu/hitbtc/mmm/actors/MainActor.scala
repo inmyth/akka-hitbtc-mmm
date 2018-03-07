@@ -90,7 +90,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case "login" => config.foreach(c => ws.foreach(_ ! SendJs(Json.toJson(Login.from(c)))))
 
-    case LoginSuccess => ws.foreach(_ ! SendJs(SubscribeReports.toJsValue()))
+    case LoginSuccess => ws.foreach(_ ! SendJs(SubscribeReports.toJsValue))
 
     case SubsribeReportsSuccess => info("Subscribe Reports success")
 
