@@ -49,11 +49,11 @@ Interval in seconds of orderbook log
 
 **pair (String)**
 
-Currency or IOU with base.baseIssuer/quote.quoteIssuer format.
+Currency symbol
 
 **startMiddlePrice (String)**
 
-Starting rate for seeder.
+Starting rate for seed
 
 **gridSpace` (String)**
 
@@ -66,7 +66,6 @@ Number of seed orders for buy and sell sides respectively.
 **buyOrderQuantity and sellOrderQuantity (String)**
 
 Amount of seed and counter order.
-
 
 **qtyScale (int)**
 Scale of minimum quantity for base currency.
