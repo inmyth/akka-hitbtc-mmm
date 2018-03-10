@@ -116,7 +116,7 @@ StartLimitIntervalSec=0
 Type=simple
 Restart=on-abnormal
 RestartSec=10
-ExecStart=/usr/bin/java -jar /home/ubuntu/hitbtc/jars/akka-hitbtc-mmm-assembly-1.3.jar /home/ubuntu/hitbtc/bots/one/config.txt /home/ubuntu/hitbtc/bots/one
+ExecStart=/usr/bin/java -jar /home/ubuntu/hitbtc/jars/akka-hitbtc-mmm-assembly-1.3.jar /home/ubuntu/hitbtc/bots/one/config.txt /home/ubuntu/hitbtc/bots/one/
 
 [Install]
 WantedBy=multi-user.target

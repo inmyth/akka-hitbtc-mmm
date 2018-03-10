@@ -72,3 +72,4 @@ config.txt
 config-extra.txt
 /log/
 *.log
+.jar
