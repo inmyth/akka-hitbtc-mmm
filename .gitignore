@@ -68,8 +68,29 @@ fabric.properties
 
 # End of https://www.gitignore.io/api/intellij
 
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+.lib/
+
+### Scala ###
+*.class
+*.log
+
+# mac
+.DS_Store
+
+# other
+.history
+.scala_dependencies
+.cache
+.cache-main
+
+
 config.txt
 config-extra.txt
-/log/
-*.log
+log/
 .jar
