@@ -100,7 +100,7 @@ private var main: Option[ActorRef] = None
     override def onPingFrame(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketFrame): Unit = {}
     override def onPongFrame(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketFrame): Unit = {}
     override def onSendError(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketException, x$3: com.neovisionaries.ws.client.WebSocketFrame): Unit = {
-      main foreach(_ ! WSError(s"WsActor#onSendError: ${x$2.getMessage}", Some(1)))
+      main foreach(_ ! WSError(s"WsActor#onSendError: ${x$2.getMessage}", Some(-1)))
     }
 
     override def onSendingFrame(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketFrame): Unit = {}

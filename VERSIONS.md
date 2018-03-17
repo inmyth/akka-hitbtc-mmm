@@ -1,3 +1,6 @@
+1.5.1
+- websocket onSendError and onError should return -1
+
 1.5
 - added email reporting, working on email send - shutdown future
 - actorized error handling in MainActor
