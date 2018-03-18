@@ -82,4 +82,5 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] ws listeners handling
 - [x] need to check email sender on small errors
 - [x] assembly deduplication error
-- [] clean up warnings
+- [x] clean up warnings
+- [] add cancel orders for numbers > config 
