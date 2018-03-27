@@ -87,7 +87,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     side match {
       case Side.buy => buys.remove(id)
       case Side.sell => sels.remove(id)
-      case _ => warn(s"OrderbookActor#CancelInvalidOrder _ _ $id")
+      case _ => warn(s"OrderbookActor#CancelInvalidOrder $id")
     }
   }
 

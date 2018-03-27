@@ -86,7 +86,8 @@ class MainActor(configPath : String) extends Actor with MyLogging {
       parser = Some(context.actorOf(Props(new ParserActor(config))))
       self ! "login"
 
-    case WsDisconnected => info(s"Disconnected")
+    case WsDisconnected =>
+      info(s"Disconnected")
 
     case "login" => config.foreach(c => ws.foreach(_ ! SendJs(Json.toJson(Login.from(c)))))
 

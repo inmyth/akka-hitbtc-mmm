@@ -84,3 +84,5 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] assembly deduplication error
 - [x] clean up warnings
 - [] add cancel orders for numbers > config 
+- [] refill strategy
+- [] test reconnect after server down
