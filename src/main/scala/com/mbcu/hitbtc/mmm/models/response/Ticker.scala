@@ -1,64 +1,48 @@
 package com.mbcu.hitbtc.mmm.models.response
 
-import com.mbcu.hitbtc.mmm.models.response.Side.Side
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.format.DateTimeFormat
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import play.api.libs.json.JodaReads
 
 object Ticker {
-  implicit val jsonFormat = Json.format[Ticker]
+  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+
+  val customReads = Reads[DateTime](js =>
+    js.validate[String].map[DateTime](dtString =>
+      DateTime.parse(dtString, DateTimeFormat.forPattern(dateFormat).withZone(DateTimeZone.UTC))
+    )
+  )
 
 
-//  object Implicits {
-//    implicit val tickerWrites = new Writes[Ticker] {
-//      def writes(ticker: Ticker): JsValue = Json.obj(
-//        "symbol" -> ticker.symbol,
-//        "ask" -> ticker.ask,
-//        "bid" -> ticker.bid,
-//        "last" -> ticker.last,
-//        "open" -> ticker.open,
-//        "low" -> ticker.low,
-//        "high" -> ticker.high,
-//        "volume" -> ticker.volume,
-//        "volumeQuote" -> ticker.volumeQuote,
-//        "timestamp" -> ticker.timestamp
-//
-//      )
-//    }
-//
-//
-////    implicit val tickerWrites: Writes[Ticker] = (
-////      (JsPath \ "symbol").write[String] and
-////        (JsPath \ "ask").write[BigDecimal] and
-////        (JsPath \ "bid").write[BigDecimal] and
-////        (JsPath \ "last").write[BigDecimal] and
-////        (JsPath \ "open").write[BigDecimal] and
-////        (JsPath \ "low").write[BigDecimal] and
-////        (JsPath \ "high").write[BigDecimal] and
-////        (JsPath \ "volume").write[BigDecimal] and
-////        (JsPath \ "volumeQuote").write[BigDecimal] and
-////        (JsPath \ "timestamp").write[String]
-////      ) (unlift(Ticker.unapply))
-//
-//
-//    implicit val tickerReads: Reads[Ticker] = (
-//      (JsPath \ "symbol").read[String] and
-//        (JsPath \ "ask").read[BigDecimal] and
-//        (JsPath \ "bid").read[BigDecimal] and
-//        (JsPath \ "last").read[BigDecimal] and
-//        (JsPath \ "open").read[BigDecimal] and
-//        (JsPath \ "low").read[BigDecimal] and
-//        (JsPath \ "high").read[BigDecimal] and
-//        (JsPath \ "volume").read[BigDecimal] and
-//        (JsPath \ "volumeQuote").read[BigDecimal] and
-//        (JsPath \ "timestamp").read[String]
-//      ) (Ticker.apply _)
+    implicit val tickerWrites: Writes[Ticker] = (
+      (JsPath \ "symbol").write[String] and
+        (JsPath \ "ask").write[BigDecimal] and
+        (JsPath \ "bid").write[BigDecimal] and
+        (JsPath \ "last").write[BigDecimal] and
+        (JsPath \ "open").write[BigDecimal] and
+        (JsPath \ "low").write[BigDecimal] and
+        (JsPath \ "high").write[BigDecimal] and
+        (JsPath \ "volume").write[BigDecimal] and
+        (JsPath \ "volumeQuote").write[BigDecimal] and
+        (JsPath \ "timestamp").write[DateTime](JodaWrites.jodaDateWrites(dateFormat))
+      ) (unlift(Ticker.unapply))
 
+    implicit val tickerReads: Reads[Ticker] = (
+      (JsPath \ "symbol").read[String] and
+        (JsPath \ "ask").read[BigDecimal] and
+        (JsPath \ "bid").read[BigDecimal] and
+        (JsPath \ "last").read[BigDecimal] and
+        (JsPath \ "open").read[BigDecimal] and
+        (JsPath \ "low").read[BigDecimal] and
+        (JsPath \ "high").read[BigDecimal] and
+        (JsPath \ "volume").read[BigDecimal] and
+        (JsPath \ "volumeQuote").read[BigDecimal] and
+        (JsPath \ "timestamp").read[DateTime](customReads)
+      ) (Ticker.apply _)
 
-//    implicit val tickerFormat: Format[Ticker] = Format(tickerReads, tickerWrites)
-//  }
-
+    implicit val tickerFormat: Format[Ticker] = Format(tickerReads, tickerWrites)
 }
 
 case class Ticker(
