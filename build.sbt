@@ -26,3 +26,5 @@ libraryDependencies ++= Seq(
 )
 
 excludeDependencies += "commons-logging" % "commons-logging"
+
+libraryDependencies += "com.typesafe.play" %% "play-json-joda" % "2.6.9"
