@@ -38,19 +38,20 @@ object Env {
 }
 
 case class Bot (
-pair              : String,
-startMiddlePrice  : BigDecimal,
-gridSpace         : BigDecimal,
-buyGridLevels     : Int,
-sellGridLevels    : Int,
-buyOrderQuantity  : BigDecimal,
-sellOrderQuantity : BigDecimal,
-maxPrice          : Option[BigDecimal],
-minPrice          : Option[BigDecimal],
-qtyScale          : Int,
-strategy          : Strategies
+  pair              : String,
+  startMiddlePrice  : BigDecimal,
+  gridSpace         : BigDecimal,
+  buyGridLevels     : Int,
+  sellGridLevels    : Int,
+  buyOrderQuantity  : BigDecimal,
+  sellOrderQuantity : BigDecimal,
+  maxPrice          : Option[BigDecimal],
+  minPrice          : Option[BigDecimal],
+  qtyScale          : Int,
+  strategy          : Strategies,
+  fillSpread        : Option[Boolean]
+  )
 
-)
 object Bot {
   implicit val jsonFormat: OFormat[Bot] = Json.format[Bot]
 
@@ -69,7 +70,8 @@ object Bot {
         "maxPrice" -> bot.maxPrice,
         "minPrice" -> bot.minPrice,
         "qtyScale" -> bot.qtyScale,
-        "strategy" -> bot.strategy
+        "strategy" -> bot.strategy,
+        "fillSpread" -> bot.fillSpread
       )
     }
 
@@ -84,7 +86,8 @@ object Bot {
       (JsPath \ "maxPrice").readNullable[BigDecimal] and
       (JsPath \ "minPrice").readNullable[BigDecimal] and
       (JsPath \ "qtyScale").read[Int] and
-      (JsPath \ "strategy").read[Strategies]
+      (JsPath \ "strategy").read[Strategies] and
+      (JsPath \ "fillSpred").readNullable[Boolean]
       ) (Bot.apply _)
   }
 }

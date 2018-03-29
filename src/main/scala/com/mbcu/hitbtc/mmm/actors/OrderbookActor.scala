@@ -1,7 +1,7 @@
 package com.mbcu.hitbtc.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Props}
-import com.mbcu.hitbtc.mmm.actors.OrderbookActor.{CancelInvalidOrder, InitOrder, Sort}
+import com.mbcu.hitbtc.mmm.actors.OrderbookActor.{CancelInvalidOrder, InitCompleted, InitOrder, Sort}
 import com.mbcu.hitbtc.mmm.actors.ParserActor.{OrderCancelled, OrderFilled, OrderNew, OrderPartiallyFilled}
 import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
 import com.mbcu.hitbtc.mmm.models.internal.{Bot, Config}
@@ -19,7 +19,10 @@ import scala.collection.immutable.ListMap
 object OrderbookActor {
   def props(bot : Bot): Props = Props(new OrderbookActor(bot))
 
-  case class InitOrder(order : Order)
+
+  case class InitOrder(orders : Option[Seq[Order]])
+
+  case class InitCompleted(symbol: String)
 
   case class Sort(side : Side)
 
@@ -36,13 +39,18 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   override def receive: Receive = {
     case "start" => state = Some(sender())
 
-    case InitOrder(order) => add(order)
+    case InitOrder(orders) =>
+      orders foreach(_ foreach add)
+      self ! "init orders completed"
 
     case "init orders completed" =>
       sort(Side.all)
       balancer(Side.all) foreach (no => sendOrder(no, "seed"))
 
+
     case "log orderbooks" => info(dump())
+
+    case "fill spread" =>
 
     case CancelInvalidOrder(id) =>
       MyUtils.sideFromId(id) match {

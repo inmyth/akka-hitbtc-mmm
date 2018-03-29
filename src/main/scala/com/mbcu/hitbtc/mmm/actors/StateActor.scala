@@ -33,12 +33,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
     case ActiveOrders(ordersOption : Option[Seq[Order]]) =>
       ordersOption match {
-        case Some(orders) =>
-          orders foreach (order => {
-            context.actorSelection(s"/user/main/state/${order.symbol}") ! InitOrder(order)
-          })
-          context.children foreach(_ ! "init orders completed")
-
+        case Some(orders) => orders foreach (order => context.actorSelection(s"/user/main/state/${order.symbol}") ! InitOrder(ordersOption))
         case _ => println("MainActor#ActiveOrders : _")
       }
 

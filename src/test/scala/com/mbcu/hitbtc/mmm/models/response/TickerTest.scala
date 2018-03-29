@@ -37,8 +37,6 @@ class TickerTest extends FunSuite{
     assert(params.volumeQuote === BigDecimal("311.501319"))
     assert(params.symbol === "NOAHBTC")
     assert(params.timestamp === DateTime.parse("2018-03-28T04:07:48.724Z").withZone(DateTimeZone.UTC))
-
-
   }
 
 }
