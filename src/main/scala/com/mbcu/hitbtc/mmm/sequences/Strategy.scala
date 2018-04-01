@@ -35,6 +35,7 @@ object Strategy {
     implicit val strategiesWrites = Writes.enumNameWrites
   }
 
+
   def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,  maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
     var range = 0
 

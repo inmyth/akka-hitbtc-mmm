@@ -160,6 +160,13 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   }
 
+  def seedZero() : Unit = ???
+
+  def seedSideZero() : Unit = ???
+
+  def seedSide() : Unit = ???
+
+
   def getPreSeed(side : Side) : (Int, BigDecimal, BigDecimal, Boolean) = {
     var qty0 : BigDecimal = BigDecimal("0")
     var unitPrice0 : BigDecimal = BigDecimal("0")
