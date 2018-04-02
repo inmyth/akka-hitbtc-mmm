@@ -38,4 +38,29 @@ class MyUtilsTest extends FunSuite {
     val t1 = BigDecimal("5.12340021")
     assert(BigDecimal("5.123") == MyUtils.roundFloor(t1, scale))
   }
+
+  test ("tuple pattern match") {
+    val a = (5, 6)
+    val b = (0, 6)
+
+    def tuplePM(in : (Int, Int)) : Unit = {
+      in match {
+        case _ if in._1 > 0 && in._2 > 0 => assert(in._1 > 0)
+        case _ if in._1 == 0 && in._2 > 0 => assert(in._1 == 0)
+      }
+    }
+
+    tuplePM(a)
+    tuplePM(b)
+
+
+  }
+
+  test("test add tuple to seq")  {
+    var res = scala.collection.immutable.Seq[(Int, BigDecimal, BigDecimal, Boolean)] = Seq.empty
+    res = res +: Seq(5, BigDecimal(5), BigDecimal(5), false)
+    res = res +: Seq(7, BigDecimal(7), BigDecimal(7), false)
+    println(res)
+
+  }
 }

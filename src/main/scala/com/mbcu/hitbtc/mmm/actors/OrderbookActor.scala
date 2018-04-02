@@ -160,7 +160,29 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   }
 
-  def seedZero() : Unit = ???
+  def pipeSeed(side : Side) = {
+    var res : scala.collection.immutable.Seq[(Int, BigDecimal, BigDecimal, Boolean)] = Seq.empty
+
+    (buys, sels) match {
+
+      case buys.empty && sels.empty =>
+//        res = res + (bot.buyGridLevels, bot.buyOrderQuantity, bot.startMiddlePrice, false)
+
+      case buys.nonEmpty && sels.empty =>
+      case buys.empty && sels.nonEmpty =>
+      case buys.nonEmpty && sels.nonEmpty =>
+
+
+    }
+
+
+
+  }
+
+//  def seedBothZero() : Unit = {
+//    var
+//
+//  }
 
   def seedSideZero() : Unit = ???
 
