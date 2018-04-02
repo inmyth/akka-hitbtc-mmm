@@ -57,10 +57,19 @@ class MyUtilsTest extends FunSuite {
   }
 
   test("test add tuple to seq")  {
-    var res = scala.collection.immutable.Seq[(Int, BigDecimal, BigDecimal, Boolean)] = Seq.empty
-    res = res +: Seq(5, BigDecimal(5), BigDecimal(5), false)
-    res = res +: Seq(7, BigDecimal(7), BigDecimal(7), false)
-    println(res)
+    var res : scala.collection.immutable.Seq[(Int, BigDecimal, BigDecimal, Boolean)] = scala.collection.immutable.Seq.empty
+    res = (5, BigDecimal(5), BigDecimal(5), false) +: res
+    res = (7, BigDecimal(7), BigDecimal(7), false) +: res
+    assert(res.head._1 == 7)
+
+  }
+
+  test("series to reduce"){
+    val a = BigDecimal(4)
+    val b = BigDecimal("13.4")
+    val c = a.to(b, BigDecimal())
+      .reduce((l,r) => r)
+
 
   }
 }
