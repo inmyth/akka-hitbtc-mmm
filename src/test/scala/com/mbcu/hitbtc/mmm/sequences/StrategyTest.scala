@@ -194,4 +194,28 @@ class StrategyTest extends FunSuite {
     assert(res.lengthCompare(0) == 0)
   }
 
+  test("calculate order zero from any buy order in orderbook") {
+    var unitPrice0 = BigDecimal("1")
+    val qty0  = BigDecimal("800")
+    val midPrice = BigDecimal("1.02")
+    val rate = BigDecimal("1.01")
+    val amtPower = 2
+
+    val res = Strategy.reconstructPPT(unitPrice0, qty0, rate, amtPower, 3, Side.buy, midPrice)
+    assert(res._1 === BigDecimal("1.0201"))
+    assert(res._2 === BigDecimal("784.236"))
+  }
+
+  test("calculate order zero from any sell order in orderbook") {
+    var unitPrice0 = BigDecimal("1")
+    val qty0  = BigDecimal("800")
+    val midPrice = BigDecimal("0.98")
+    val rate = BigDecimal("1.01")
+    val amtPower = 2
+
+    val res = Strategy.reconstructPPT(unitPrice0, qty0, rate, amtPower, 3, Side.sell, midPrice)
+    assert(res._1 === BigDecimal("0.9705901479276445"))
+    assert(res._2 === BigDecimal("824.241"))
+  }
+
 }

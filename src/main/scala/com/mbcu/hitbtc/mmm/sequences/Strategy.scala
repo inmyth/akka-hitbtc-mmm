@@ -99,10 +99,10 @@ object Strategy {
     seed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, maxPrice, minPrice)
   }
 
-  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={
+  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement, amtPower : Int = 1): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
-    val sqrt = MyUtils.sqrt(rate)
-    val qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * sqrt, qtyScale) else MyUtils.roundFloor(qty0(mc) / sqrt, qtyScale)
+    val mtpBoost = MyUtils sqrt(rate) pow(amtPower)
+    val qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * mtpBoost, qtyScale) else MyUtils.roundFloor(qty0(mc) / mtpBoost, qtyScale)
     (unitPrice1, qty1)
   }
 
@@ -111,6 +111,24 @@ object Strategy {
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) - rate else unitPrice0 + rate
     val qty1 = qty0
     (unitPrice1, qty1)
+  }
+
+  def reconstructPPT(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, amtPower : Int, qtyScale : Int, side: Side, midPrice : BigDecimal) : (BigDecimal, BigDecimal) = {
+    var levels = 0
+    var base = (unitPrice0, qty0)
+    side match {
+      case Side.buy =>
+        while (base._1 < midPrice) {
+          levels = levels + 1
+          base = ppt(base._1, base._2, rate, qtyScale, Movement.UP, amtPower)
+        }
+      case _ =>
+        while (base._1 > midPrice) {
+          levels = levels + 1
+          base = ppt(base._1, base._2, rate, qtyScale, Movement.DOWN, amtPower)
+        }
+    }
+    (base._1, base._2)
   }
 
 

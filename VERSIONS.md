@@ -1,3 +1,13 @@
+1.6 in progress
+- TODO estimate order zero from any order in the orderbook
+- TODO generate orders from order zero
+- TODO ppt supports amtPower
+- TODO seed one side : reconstruct only orders close to spread
+- TODO add amtPower : Int in botConfig
+- TODO initial seed amount must also be different on each price level
+- TODO keep number of orders according to config
+
+
 1.5.1
 - websocket onSendError and onError should return -1
 

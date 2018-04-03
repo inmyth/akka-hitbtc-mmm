@@ -46,7 +46,7 @@ class MyUtilsTest extends FunSuite {
     def tuplePM(in : (Int, Int)) : Unit = {
       in match {
         case _ if in._1 > 0 && in._2 > 0 => assert(in._1 > 0)
-        case _ if in._1 == 0 && in._2 > 0 => assert(in._1 == 0)
+        case _ if in._1 == 0 && in._2 > 0 => assert(in._1 === 0)
       }
     }
 
@@ -60,16 +60,30 @@ class MyUtilsTest extends FunSuite {
     var res : scala.collection.immutable.Seq[(Int, BigDecimal, BigDecimal, Boolean)] = scala.collection.immutable.Seq.empty
     res = (5, BigDecimal(5), BigDecimal(5), false) +: res
     res = (7, BigDecimal(7), BigDecimal(7), false) +: res
-    assert(res.head._1 == 7)
+    assert(res.head._1 === 7)
 
   }
 
-  test("series to reduce"){
+  test("series to reduce") {
     val a = BigDecimal(4)
     val b = BigDecimal("13.4")
-    val c = a.to(b, BigDecimal())
-      .reduce((l,r) => r)
-
-
+    val c = a.to(b, BigDecimal(5))
+      .reduce((l, r) => r)
+    assert(c === BigDecimal(9))
   }
+
+  test ("while loop ") {
+    var levels = 0
+    var a = BigDecimal("1")
+    val m = BigDecimal("1.01")
+    val b = BigDecimal("1.03")
+
+    while (a < b) {
+      levels = levels + 1
+      a = a * m
+    }
+    assert(levels === 3)
+  }
+
+
 }
