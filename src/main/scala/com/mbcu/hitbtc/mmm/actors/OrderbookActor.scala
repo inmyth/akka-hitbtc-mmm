@@ -120,7 +120,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   }
 
   def counter(order : Order) : Seq[NewOrder] = {
-    Strategy.counter(order.quantity, order.price, bot.qtyScale, order.symbol, bot.gridSpace, order.side, bot.strategy, bot.maxPrice, bot.minPrice)
+    Strategy.counter(order.quantity, order.price, bot.quantityPower, bot.qtyScale, order.symbol, bot.gridSpace, order.side, bot.strategy, bot.maxPrice, bot.minPrice)
   }
 
   def balancer(side : Side) : Seq[NewOrder] = {
@@ -144,7 +144,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   def seed(side : Side) : Seq[NewOrder] = {
     val preSeed = getPreSeed(side)
     if (preSeed._1 > 0){
-      Strategy.seed(preSeed._2, preSeed._3, bot.qtyScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy, bot.maxPrice, bot.minPrice)
+      Strategy.seed(preSeed._2, preSeed._3, bot.quantityPower, bot.qtyScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy, bot.maxPrice, bot.minPrice)
     }
     else {
       Seq.empty[NewOrder]

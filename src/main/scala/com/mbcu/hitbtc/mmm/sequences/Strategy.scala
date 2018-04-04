@@ -36,7 +36,10 @@ object Strategy {
   }
 
 
-  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal, side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,  maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
+  def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int,
+            qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
+            side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,
+            maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
     var range = 0
 
     strategy match {
@@ -63,7 +66,7 @@ object Strategy {
           case Some(r) =>
             val movement = if (side == Side.buy) Movement.DOWN else Movement.UP
             strategy match {
-              case Strategies.ppt => p1q1 = Some(ppt(unitPrice0, qty0, r, qtyScale, movement))
+              case Strategies.ppt => p1q1 = Some(ppt(unitPrice0, qty0, amtPwr, r, qtyScale, movement))
               case Strategies.fullfixed => p1q1 = Some(step(unitPrice0, qty0, r, qtyScale, movement))
               case _ => p1q1 = None
             }
@@ -94,14 +97,14 @@ object Strategy {
 
   }
 
-  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : Side, strategy : Strategies,  maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
+  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : Side, strategy : Strategies, maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
     val newSide = if (side == Side.buy) Side.sell else Side.buy
-    seed(qty0, unitPrice0, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, maxPrice, minPrice)
+    seed(qty0, unitPrice0, amtPwr, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, maxPrice, minPrice)
   }
 
-  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement, amtPower : Int = 1): (BigDecimal, BigDecimal) ={
+  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, movement: Movement): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
-    val mtpBoost = MyUtils sqrt(rate) pow(amtPower)
+    val mtpBoost = MyUtils sqrt rate pow amtPower
     val qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * mtpBoost, qtyScale) else MyUtils.roundFloor(qty0(mc) / mtpBoost, qtyScale)
     (unitPrice1, qty1)
   }
@@ -113,19 +116,19 @@ object Strategy {
     (unitPrice1, qty1)
   }
 
-  def reconstructPPT(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, amtPower : Int, qtyScale : Int, side: Side, midPrice : BigDecimal) : (BigDecimal, BigDecimal) = {
+  def reconstructPPT(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, side: Side, midPrice : BigDecimal) : (BigDecimal, BigDecimal) = {
     var levels = 0
     var base = (unitPrice0, qty0)
     side match {
       case Side.buy =>
         while (base._1 < midPrice) {
           levels = levels + 1
-          base = ppt(base._1, base._2, rate, qtyScale, Movement.UP, amtPower)
+          base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.UP)
         }
       case _ =>
         while (base._1 > midPrice) {
           levels = levels + 1
-          base = ppt(base._1, base._2, rate, qtyScale, Movement.DOWN, amtPower)
+          base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.DOWN)
         }
     }
     (base._1, base._2)

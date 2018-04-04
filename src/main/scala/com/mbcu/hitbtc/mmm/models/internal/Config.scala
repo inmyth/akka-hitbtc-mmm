@@ -45,6 +45,7 @@ case class Bot (
   sellGridLevels    : Int,
   buyOrderQuantity  : BigDecimal,
   sellOrderQuantity : BigDecimal,
+  quantityPower     : Int,
   maxPrice          : Option[BigDecimal],
   minPrice          : Option[BigDecimal],
   qtyScale          : Int,
@@ -67,6 +68,7 @@ object Bot {
         "sellGridLevels" -> bot.sellGridLevels,
         "buyOrderQuantity" -> bot.buyOrderQuantity,
         "sellOrderQuantity" -> bot.sellOrderQuantity,
+        "quantityPower" -> bot.quantityPower,
         "maxPrice" -> bot.maxPrice,
         "minPrice" -> bot.minPrice,
         "qtyScale" -> bot.qtyScale,
@@ -83,6 +85,7 @@ object Bot {
       (JsPath \ "sellGridLevels").read[Int] and
       (JsPath \ "buyOrderQuantity").read[BigDecimal] and
       (JsPath \ "sellOrderQuantity").read[BigDecimal] and
+      (JsPath \ "quantityPower").read[Int] and
       (JsPath \ "maxPrice").readNullable[BigDecimal] and
       (JsPath \ "minPrice").readNullable[BigDecimal] and
       (JsPath \ "qtyScale").read[Int] and

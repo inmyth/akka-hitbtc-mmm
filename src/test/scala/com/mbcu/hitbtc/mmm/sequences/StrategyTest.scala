@@ -38,8 +38,9 @@ class StrategyTest extends FunSuite {
     "new"
   )
 
+  val amtPower1 = 1
   test("ppt seed sell pulledFromOtherSide") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.ppt)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.ppt)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price * mtp * mtp)
     assert(res.head.params.quantity == MyUtils.roundFloor(qty(mc) / mtp, XRPscale))
@@ -49,7 +50,7 @@ class StrategyTest extends FunSuite {
 
 
   test("ppt seed sell") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price * mtp)
     assert(res.head.params.quantity == MyUtils.roundFloor(qty(mc) / MyUtils.sqrt(mtp), XRPscale))
@@ -58,7 +59,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("ppt buy sell pulledFromOtherSide") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.ppt)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.ppt)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price(mc) /  mtp / mtp)
     assert(res.head.params.quantity == qty(mc) * mtp )
@@ -68,7 +69,7 @@ class StrategyTest extends FunSuite {
 
 
   test("ppt seed buy") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy, isPulledFromOtherSide = false, Strategies.ppt)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy, isPulledFromOtherSide = false, Strategies.ppt)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price(mc) /  mtp )
     assert(res.head.params.quantity == MyUtils.roundCeil(qty(mc) * MyUtils.sqrt(mtp), XRPscale))
@@ -77,7 +78,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("ppt counter from buy"){
-    val res = Strategy.counter(order.quantity, order.price, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.ppt)
+    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.ppt)
     assert(res.lengthCompare(1) == 0)
     assert(res.head.params.side == Side.sell)
     assert(res.head.params.price == price(mc) *  mtp )
@@ -85,7 +86,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("ppt counter from sell"){
-    val res = Strategy.counter(order.quantity, order.price, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.ppt)
+    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.ppt)
     assert(res.lengthCompare(1) == 0)
     assert(res.head.params.side == Side.buy)
     assert(res.head.params.price == price(mc) /  mtp )
@@ -93,7 +94,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("full seed sell pulledFromOtherSide") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.fullfixed)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.fullfixed)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price + 2 * gridSpace)
     assert(res(1).params.price == price + 3 * gridSpace)
@@ -105,7 +106,7 @@ class StrategyTest extends FunSuite {
 
 
   test("full seed sell") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.fullfixed)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.fullfixed)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price + 1 * gridSpace)
     assert(res(1).params.price == price + 2 * gridSpace)
@@ -118,7 +119,7 @@ class StrategyTest extends FunSuite {
 
 
   test("full seed buy pulledFromOtherSide") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price - 2 * gridSpace)
     assert(res(1).params.price == price - 3 * gridSpace)
@@ -130,7 +131,7 @@ class StrategyTest extends FunSuite {
 
 
   test("full seed buy") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.fullfixed)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.fullfixed)
     assert(res.lengthCompare(3) == 0)
     assert(res.head.params.price == price - 1 * gridSpace)
     assert(res(1).params.price == price - 2 * gridSpace)
@@ -141,7 +142,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("full counter from buy"){
-    val res = Strategy.counter(order.quantity, order.price, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.fullfixed)
+    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.fullfixed)
     assert(res.lengthCompare(1) == 0)
     assert(res.head.params.side == Side.sell)
     assert(res.head.params.price == price +  gridSpace )
@@ -149,7 +150,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("full counter from sell"){
-    val res = Strategy.counter(order.quantity, order.price, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.fullfixed)
+    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.fullfixed)
     assert(res.lengthCompare(1) == 0)
     assert(res.head.params.side == Side.buy)
     assert(res.head.params.price == price(mc) - gridSpace )
@@ -158,12 +159,12 @@ class StrategyTest extends FunSuite {
 
 
   test("full seed buy pulledFromOtherSide, negative price") {
-    val res = Strategy.seed(order.quantity, BigDecimal("0.00009"), XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
+    val res = Strategy.seed(order.quantity, BigDecimal("0.00009"), amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
     assert(res.lengthCompare(0) == 0)
   }
 
   test("full seed buy with minPrice, 10 levels") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 10, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.fullfixed, None, Some(BigDecimal(5)))
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 10, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.fullfixed, None, Some(BigDecimal(5)))
     assert(res.lengthCompare(5) == 0)
     assert(res.head.params.price == price - 1 * gridSpace)
     assert(res(1).params.price == price - 2 * gridSpace)
@@ -174,7 +175,7 @@ class StrategyTest extends FunSuite {
   }
 
   test("full seed sell with maxPrice, 10 levels") {
-    val res = Strategy.seed(order.quantity, order.price, XRPscale, order.symbol, 10, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.fullfixed, Some(BigDecimal("15")), None)
+    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 10, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.fullfixed, Some(BigDecimal("15")), None)
     assert(res.lengthCompare(5) == 0)
     assert(res.head.params.price == price + 1 * gridSpace)
     assert(res(1).params.price == price + 2 * gridSpace)
@@ -185,37 +186,48 @@ class StrategyTest extends FunSuite {
   }
 
   test("full counter from buy with maxPrice"){
-    val res = Strategy.counter(order.quantity, order.price, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.fullfixed, Some(BigDecimal("10.7")), None)
+    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.fullfixed, Some(BigDecimal("10.7")), None)
     assert(res.lengthCompare(0) == 0)
   }
 
   test("full counter from sell with minPrice"){
-    val res = Strategy.counter(order.quantity, order.price, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.fullfixed,  None,  Some(BigDecimal("9.2")))
+    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.fullfixed,  None,  Some(BigDecimal("9.2")))
     assert(res.lengthCompare(0) == 0)
   }
 
-  test("calculate order zero from any buy order in orderbook") {
+  val amtPower2 = 2
+
+  test("reconstruct order zero from any buy order in orderbook") {
     var unitPrice0 = BigDecimal("1")
     val qty0  = BigDecimal("800")
     val midPrice = BigDecimal("1.02")
     val rate = BigDecimal("1.01")
-    val amtPower = 2
+    val res1 = Strategy.reconstructPPT(unitPrice0, qty0, amtPower1, rate, 3, Side.buy, midPrice)
+    assert(res1._1 === BigDecimal("1.0201"))
+    assert(res1._2 === BigDecimal("792.078"))
 
-    val res = Strategy.reconstructPPT(unitPrice0, qty0, rate, amtPower, 3, Side.buy, midPrice)
-    assert(res._1 === BigDecimal("1.0201"))
-    assert(res._2 === BigDecimal("784.236"))
+    val buyGridLevels = 10
+    val res2 = Strategy.seed(res1._2, res1._1, amtPower1, 1, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
+    assert(res2.size === 10)
+    assert(res2.head.params.price === BigDecimal("1.01"))
+    assert(res2.head.params.quantity === BigDecimal("796.1"))
+    assert(res2(1).params.price === BigDecimal("1"))
+    assert(res2(1).params.quantity === BigDecimal("800"))
   }
 
-  test("calculate order zero from any sell order in orderbook") {
+  test("reconstruct order zero from any sell order in orderbook") {
     var unitPrice0 = BigDecimal("1")
     val qty0  = BigDecimal("800")
     val midPrice = BigDecimal("0.98")
     val rate = BigDecimal("1.01")
-    val amtPower = 2
 
-    val res = Strategy.reconstructPPT(unitPrice0, qty0, rate, amtPower, 3, Side.sell, midPrice)
+    val res = Strategy.reconstructPPT(unitPrice0, qty0, amtPower2, rate, 3, Side.sell, midPrice)
     assert(res._1 === BigDecimal("0.9705901479276445"))
     assert(res._2 === BigDecimal("824.241"))
+
+
   }
+
+
 
 }
