@@ -116,7 +116,7 @@ object Strategy {
     (unitPrice1, qty1)
   }
 
-  def reconstructPPT(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, side: Side, midPrice : BigDecimal) : (BigDecimal, BigDecimal) = {
+  def calcMidPrice(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, side: Side, midPrice : BigDecimal) : (BigDecimal, BigDecimal) = {
     var levels = 0
     var base = (unitPrice0, qty0)
     side match {

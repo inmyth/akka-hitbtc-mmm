@@ -1,11 +1,6 @@
 1.6 in progress
-- TODO estimate order zero from any order in the orderbook
-- TODO generate orders from order zero
-- TODO ppt supports amtPower
-- TODO seed one side : reconstruct only orders close to spread
-- TODO add amtPower : Int in botConfig
-- TODO initial seed amount must also be different on each price level
-- TODO keep number of orders according to config
+
+
 
 
 1.5.1
@@ -96,3 +91,12 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [] add cancel orders for numbers > config 
 - [] refill strategy
 - [] test reconnect after server down
+- [] base needs scale
+- [x] estimate midPrice from any order in the orderbook
+- [x] generate orders from order zero
+- [] ppt supports amtPower
+- [] seed one side : reconstruct only orders close to spread
+- [] add amtPower : Int in botConfig
+- [] initial seed amount must also be different on each price level
+- [] keep number of orders according to config
+- [] merge emails

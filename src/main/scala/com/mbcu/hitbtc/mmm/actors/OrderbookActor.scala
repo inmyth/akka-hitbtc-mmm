@@ -19,7 +19,6 @@ import scala.collection.immutable.ListMap
 object OrderbookActor {
   def props(bot : Bot): Props = Props(new OrderbookActor(bot))
 
-
   case class InitOrder(orders : Option[Seq[Order]])
 
   case class InitCompleted(symbol: String)
@@ -27,6 +26,7 @@ object OrderbookActor {
   case class Sort(side : Side)
 
   case class CancelInvalidOrder(clientOrderId : String)
+
 
 }
 class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLogging{
@@ -160,29 +160,22 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   }
 
-  def pipeSeed(side : Side) = {
-//    var res : scala.collection.immutable.Seq[(Int, BigDecimal, BigDecimal, Boolean)] = Seq.empty
+  def pipeSeed(side : Side, midPrice : BigDecimal) = {
+    var res : List[(Int, BigDecimal, BigDecimal, Boolean)] = List()
 
-//    (buys, sels) match {
-//
-//      case buys.empty && sels.empty =>
-////        res = res + (bot.buyGridLevels, bot.buyOrderQuantity, bot.startMiddlePrice, false)
-//
-//      case buys.nonEmpty && sels.empty =>
-//      case buys.empty && sels.nonEmpty =>
-//      case buys.nonEmpty && sels.nonEmpty =>
+    (buys, sels) match {
 
+      case buys.empty && sels.empty =>
+//        res = res + (bot.buyGridLevels, bot.buyOrderQuantity, bot.startMiddlePrice, false)
 
-//    }
+      case buys.nonEmpty && sels.empty =>
+      case buys.empty && sels.nonEmpty =>
+      case buys.nonEmpty && sels.nonEmpty =>
 
 
-
+    }
   }
 
-//  def seedBothZero() : Unit = {
-//    var
-//
-//  }
 
   def seedSideZero() : Unit = ???
 

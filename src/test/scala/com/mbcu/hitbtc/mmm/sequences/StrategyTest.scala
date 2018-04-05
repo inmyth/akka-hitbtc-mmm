@@ -8,6 +8,8 @@ import com.mbcu.hitbtc.mmm.utils.MyUtils
 import org.scalactic.source.Position
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
+import scala.math.BigDecimal.RoundingMode
+
 class StrategyTest extends FunSuite {
   val mc : MathContext = MathContext.DECIMAL64
   val ZERO = BigDecimal("0")
@@ -19,6 +21,8 @@ class StrategyTest extends FunSuite {
   val gridSpace = BigDecimal("1")
   val mtp: BigDecimal = ONE + gridSpace(mc) / CENT
   val XRPscale = 3
+  val amtPower1 = 1
+  val amtPower2 = 2
 
   val order = Order(
     "testID",
@@ -38,7 +42,8 @@ class StrategyTest extends FunSuite {
     "new"
   )
 
-  val amtPower1 = 1
+
+
   test("ppt seed sell pulledFromOtherSide") {
     val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.ppt)
     assert(res.lengthCompare(3) == 0)
@@ -195,38 +200,97 @@ class StrategyTest extends FunSuite {
     assert(res.lengthCompare(0) == 0)
   }
 
-  val amtPower2 = 2
 
-  test("reconstruct order zero from any buy order in orderbook") {
+  test("reconstruct orders from any buy order far from spread") {
     var unitPrice0 = BigDecimal("1")
     val qty0  = BigDecimal("800")
     val midPrice = BigDecimal("1.02")
     val rate = BigDecimal("1.01")
-    val res1 = Strategy.reconstructPPT(unitPrice0, qty0, amtPower1, rate, 3, Side.buy, midPrice)
+    val buyGridLevels = 3
+    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice)
+    val res2 = Strategy.seed(res1._2, res1._1, amtPower1, 2, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
+
     assert(res1._1 === BigDecimal("1.0201"))
     assert(res1._2 === BigDecimal("792.078"))
 
-    val buyGridLevels = 10
-    val res2 = Strategy.seed(res1._2, res1._1, amtPower1, 1, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
-    assert(res2.size === 10)
-    assert(res2.head.params.price === BigDecimal("1.01"))
-    assert(res2.head.params.quantity === BigDecimal("796.1"))
-    assert(res2(1).params.price === BigDecimal("1"))
-    assert(res2(1).params.quantity === BigDecimal("800"))
+//    assert(res2.head.params.price === BigDecimal("1.01"))
+//    assert(res2.head.params.quantity === BigDecimal("796.1"))
+//    assert(res2(1).params.price === BigDecimal("1"))
+//    assert(res2(1).params.quantity === BigDecimal("800"))
+//    assert(res2(2).params.price === BigDecimal("0.9900990099009901"))
+//    assert(res2(2).params.quantity === BigDecimal("804.0"))
+
+    assert(res2(1).params.price === unitPrice0)
+    assert(res2(1).params.quantity === qty0)
   }
 
-  test("reconstruct order zero from any sell order in orderbook") {
+  test("reconstruct order zero from any buy order close to spread") {
+    var unitPrice0 = BigDecimal("1")
+    val qty0  = BigDecimal("800")
+    val midPrice = BigDecimal("1.005")
+    val rate = BigDecimal("1.01")
+    val buyGridLevels = 2
+
+    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice)
+    val res2 = Strategy.seed(res1._2, res1._1, amtPower1, XRPscale, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
+
+    assert(res2.head.params.price === unitPrice0)
+    assert(res2.head.params.quantity === qty0)
+
+//    assert(res1._1 === BigDecimal("1.01"))
+//    assert(res1._2 === BigDecimal("796.029"))
+//    assert(res2.head.params.price === BigDecimal("1"))
+//    assert(res2.head.params.quantity === BigDecimal("800"))
+//    assert(res2(1).params.price === BigDecimal(".9900990099009901"))
+//    assert(res2(1).params.quantity === BigDecimal("804"))
+
+
+  }
+
+  test("reconstruct order zero from sell order far from spread") {
     var unitPrice0 = BigDecimal("1")
     val qty0  = BigDecimal("800")
     val midPrice = BigDecimal("0.98")
     val rate = BigDecimal("1.01")
+    val selGridLevels = 3
+    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower2, rate, XRPscale, Side.sell, midPrice)
+    val res2 = Strategy.seed(res1._2, res1._1, amtPower2, XRPscale, order.symbol, selGridLevels, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
+    assert(res1._1 === BigDecimal("0.9705901479276445"))
+    assert(res1._2 === BigDecimal("824.241"))
 
-    val res = Strategy.reconstructPPT(unitPrice0, qty0, amtPower2, rate, 3, Side.sell, midPrice)
-    assert(res._1 === BigDecimal("0.9705901479276445"))
-    assert(res._2 === BigDecimal("824.241"))
+//    assert(res2.head.params.price === BigDecimal("0.9802960494069209"))
+//    assert(res2.head.params.quantity === BigDecimal("816.080"))
+//    assert(res2(1).params.price === BigDecimal("0.9900990099009902"))
+//    assert(res2(1).params.quantity === BigDecimal("808.000"))
+//    assert(res2(2).params.price === BigDecimal("1"))
+//    assert(res2(2).params.quantity === BigDecimal("800.000"))
 
-
+    assert(res2(2).params.price === unitPrice0)
+    assert(res2(2).params.quantity === qty0)
   }
+
+  test("reconstruct order zero from sell order close to spread") {
+    var unitPrice0 = BigDecimal("1")
+    val qty0  = BigDecimal("800")
+    val midPrice = BigDecimal("0.991")
+    val rate = BigDecimal("1.01")
+    val selGridLevels = 3
+    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower2, rate, XRPscale, Side.sell, midPrice)
+    val res2 = Strategy.seed(res1._2, res1._1, amtPower2, XRPscale, order.symbol, selGridLevels, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
+    assert(res1._1 === BigDecimal("0.9900990099009901"))
+    assert(res1._2 === BigDecimal("808.0"))
+
+
+    assert(res2.head.params.price === unitPrice0)
+    assert(res2.head.params.quantity === qty0)
+//    assert(res2.head.params.price === BigDecimal("1"))
+//    assert(res2.head.params.quantity === BigDecimal("800"))
+//    assert(res2(1).params.price === BigDecimal("1.010000000000000"))
+//    assert(res2(1).params.quantity === BigDecimal("792.079"))
+//    assert(res2(2).params.price === BigDecimal("1.020100000000000"))
+//    assert(res2(2).params.quantity === BigDecimal("784.236"))
+  }
+
 
 
 
