@@ -1,6 +1,9 @@
 1.6 in progress
 
 
+1.5.2 interim
+-
+
 
 
 1.5.1
@@ -88,15 +91,18 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] need to check email sender on small errors
 - [x] assembly deduplication error
 - [x] clean up warnings
-- [] add cancel orders for numbers > config 
-- [] refill strategy
 - [] test reconnect after server down
 - [] base needs scale
 - [x] estimate midPrice from any order in the orderbook
 - [x] generate orders from order zero
-- [] ppt supports amtPower
+- [x] ppt supports amtPower
 - [] seed one side : reconstruct only orders close to spread
 - [] add amtPower : Int in botConfig
 - [] initial seed amount must also be different on each price level
 - [] keep number of orders according to config
 - [] merge emails
+- [x] changed stateActor to orderbookActor InitOrders so even empty orders will call orderbook
+- [] seed : reconstruct new seed from a single order, cancel all existing orders (safe for BigDecimal comparison, will deprioritize new orders)
+- [] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
+- [x] get tick after orders are initiated
+- [] after tick, seed

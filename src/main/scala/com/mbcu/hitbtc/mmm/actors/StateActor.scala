@@ -1,14 +1,16 @@
 package com.mbcu.hitbtc.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Props}
-import com.mbcu.hitbtc.mmm.actors.OrderbookActor.{CancelInvalidOrder, InitOrder, Sort}
+import com.mbcu.hitbtc.mmm.actors.OrderbookActor._
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
-import com.mbcu.hitbtc.mmm.actors.StateActor.{SendNewOrder, SmartSort}
+import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendNewOrder, SmartSort}
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
 import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
+
+import scala.collection.mutable.ListBuffer
 
 object StateActor {
   def props(config: Config): Props = Props(new StateActor(config))
@@ -16,6 +18,8 @@ object StateActor {
   case class SmartSort(ordersOption : Option[Seq[Order]])
 
   case class SendNewOrder(no : NewOrder, as : String)
+
+  case class ReqTick(symbol : String)
 }
 
 class StateActor (val config : Config) extends Actor with MyLogging  {
@@ -33,9 +37,14 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
     case ActiveOrders(ordersOption : Option[Seq[Order]]) =>
       ordersOption match {
-        case Some(orders) => orders foreach (order => context.actorSelection(s"/user/main/state/${order.symbol}") ! InitOrder(ordersOption))
+        case Some(orders) =>
+          val map = Map(config.bots.map(b => (b.pair, new ListBuffer[Order])): _*).withDefaultValue(new ListBuffer[Order])
+          orders.foreach(order => map(order.symbol) += order)
+          map foreach (t => context.actorSelection(s"/user/main/state/${t._1}") ! InitOrder(t._2))
         case _ => println("MainActor#ActiveOrders : _")
       }
+
+    case InitCompleted(symbol) => main foreach(_ ! InitCompleted(symbol))
 
     case SmartSort(ordersOption : Option[Seq[Order]]) =>
       ordersOption match {
@@ -56,6 +65,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
         case _ => println("MainActor#ActiveOrders : _")
       }
+
 
     case SendNewOrder(newOrder, as) => main foreach (_ ! SendNewOrder(newOrder, as))
 

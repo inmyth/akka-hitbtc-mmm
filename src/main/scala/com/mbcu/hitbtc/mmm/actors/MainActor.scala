@@ -1,19 +1,17 @@
 package com.mbcu.hitbtc.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
-import akka.pattern.ask
-import akka.util.Timeout
 
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
-import akka.dispatch.MonitorableThreadFactory
-import com.amazonaws.services.simpleemail.model.SendEmailResult
+import com.mbcu.hitbtc.mmm.actors.OrderbookActor.InitCompleted
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
 import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
-import com.mbcu.hitbtc.mmm.models.request.{Login, NewOrder, SubscribeReports}
+import com.mbcu.hitbtc.mmm.models.request.SubscribeMarket.Market
+import com.mbcu.hitbtc.mmm.models.request.{Login, NewOrder, SubscribeMarket, SubscribeReports}
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle}
 import com.sun.xml.internal.ws.api.Cancelable
@@ -93,9 +91,15 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case LoginSuccess => ws.foreach(_ ! SendJs(SubscribeReports.toJsValue))
 
+
+
     case SubsribeReportsSuccess => info("Subscribe Reports success")
 
     case activeOrders : ActiveOrders => state foreach (_ forward activeOrders)
+
+    case InitCompleted(symbol) => ws foreach(_ ! SendJs(SubscribeMarket(Market.subscribeTicker, symbol)))
+
+    case GotTicker(ticker) => println(ticker)
 
     case OrderNew(order) => state foreach (_ ! OrderNew(order))
 

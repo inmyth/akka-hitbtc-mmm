@@ -3,6 +3,7 @@ package com.mbcu.hitbtc.mmm.utils
 import java.math.MathContext
 import java.util.TimeZone
 
+import com.mbcu.hitbtc.mmm.models.response.Order
 import org.scalatest.FunSuite
 
 import scala.collection.immutable.Range

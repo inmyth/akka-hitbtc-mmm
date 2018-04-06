@@ -3,8 +3,9 @@ package com.mbcu.hitbtc.mmm.actors
 import akka.actor.{Actor, ActorRef, Props}
 import com.mbcu.hitbtc.mmm.actors.WsActor.WsGotText
 import com.mbcu.hitbtc.mmm.models.internal.Config
+import com.mbcu.hitbtc.mmm.models.request.SubscribeMarket.Market.Market
 import com.mbcu.hitbtc.mmm.models.request.SubscribeReports
-import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
+import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError, Ticker}
 import com.mbcu.hitbtc.mmm.utils.MyLogging
 import play.api.libs.json.{JsDefined, JsValue, Json}
 
@@ -32,6 +33,8 @@ object ParserActor extends MyLogging {
 
   case class OrderExpired(order : Order)
 
+  case class GotTicker(ticker : Ticker)
+
   case class ErrorAuthFailed(er : RPCError, id :Option[String])
 
   case class ErrorServer(er : RPCError, id :Option[String])
@@ -45,6 +48,9 @@ object ParserActor extends MyLogging {
   case class ErrorOrderTooSmall(er : RPCError, id :Option[String])
 
   case class ErrorNonAffecting (er : RPCError, id :Option[String])
+
+  case class Subscribe(market: Market, symbol : String)
+
 
 }
 
@@ -93,6 +99,7 @@ class ParserActor(config : Option[Config]) extends Actor {
                     case "suspended" => sender() ! OrderSuspended(order)
                     case _ => println(s"ParserActor#WsGotTex unhandled reportType ${order.reportType}")
                   }
+                case "ticker" => sender() ! GotTicker((jsValue \ "params").as[Ticker])
                 case _ => println("ParserActor#WsGotText _ " + method)
               }
             }
