@@ -99,7 +99,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case InitCompleted(symbol) => ws foreach(_ ! SendJs(SubscribeMarket(Market.subscribeTicker, symbol)))
 
-    case GotTicker(ticker) => println(ticker)
+    case GotTicker(ticker) => state foreach(_ ! GotTicker(ticker))
 
     case OrderNew(order) => state foreach (_ ! OrderNew(order))
 

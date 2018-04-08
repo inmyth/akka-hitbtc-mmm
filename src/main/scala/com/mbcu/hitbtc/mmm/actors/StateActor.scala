@@ -46,6 +46,8 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
     case InitCompleted(symbol) => main foreach(_ ! InitCompleted(symbol))
 
+    case GotTicker(ticker) => context.actorSelection(s"/user/main/state/${ticker.symbol}") ! GotTicker(ticker)
+
     case SmartSort(ordersOption : Option[Seq[Order]]) =>
       ordersOption match {
         case Some(orders) =>

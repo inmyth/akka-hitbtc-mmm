@@ -60,6 +60,7 @@ class StrategyTest extends FunSuite {
     assert(res.head.params.price == price * mtp)
     assert(res.head.params.quantity == MyUtils.roundFloor(qty(mc) / MyUtils.sqrt(mtp), XRPscale))
     assert(res(1).params.price / res.head.params.price == mtp)
+    println(res)
     //    assert((res(1).params.quantity(mc) / res.head.params.quantity) == ONE(mc) / MyUtils.sqrt(mtp))
   }
 

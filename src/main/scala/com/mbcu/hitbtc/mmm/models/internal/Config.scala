@@ -49,8 +49,7 @@ case class Bot (
   maxPrice          : Option[BigDecimal],
   minPrice          : Option[BigDecimal],
   qtyScale          : Int,
-  strategy          : Strategies,
-  fillSpread        : Option[Boolean]
+  strategy          : Strategies
   )
 
 object Bot {
@@ -72,8 +71,7 @@ object Bot {
         "maxPrice" -> bot.maxPrice,
         "minPrice" -> bot.minPrice,
         "qtyScale" -> bot.qtyScale,
-        "strategy" -> bot.strategy,
-        "fillSpread" -> bot.fillSpread
+        "strategy" -> bot.strategy
       )
     }
 
@@ -89,8 +87,7 @@ object Bot {
       (JsPath \ "maxPrice").readNullable[BigDecimal] and
       (JsPath \ "minPrice").readNullable[BigDecimal] and
       (JsPath \ "qtyScale").read[Int] and
-      (JsPath \ "strategy").read[Strategies] and
-      (JsPath \ "fillSpred").readNullable[Boolean]
+      (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)
   }
 }

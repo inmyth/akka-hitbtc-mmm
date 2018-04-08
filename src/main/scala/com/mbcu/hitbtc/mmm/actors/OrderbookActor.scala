@@ -2,7 +2,7 @@ package com.mbcu.hitbtc.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Props}
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor.{CancelInvalidOrder, InitCompleted, InitOrder, Sort}
-import com.mbcu.hitbtc.mmm.actors.ParserActor.{OrderCancelled, OrderFilled, OrderNew, OrderPartiallyFilled}
+import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
 import com.mbcu.hitbtc.mmm.models.internal.{Bot, Config}
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
@@ -35,6 +35,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   var sortedSels: scala.collection.immutable.Seq[Order] = scala.collection.immutable.Seq.empty[Order]
   var sortedBuys : scala.collection.immutable.Seq[Order] = scala.collection.immutable.Seq.empty[Order]
   var state : Option[ActorRef] = None
+  var requestingTicker = false
 
   override def receive: Receive = {
     case "start" =>
@@ -42,6 +43,8 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
     case InitOrder(orders) =>
       orders foreach add
+      sort(Side.all)
+      requestingTicker = true
       state foreach(_ ! InitCompleted(bot.pair))
 
 //      self ! "init orders completed"
@@ -54,6 +57,13 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case "log orderbooks" => info(dump())
 
     case "fill spread" =>
+
+    case GotTicker(ticker)  =>
+      if (requestingTicker){
+        requestingTicker = false
+
+      }
+
 
     case CancelInvalidOrder(id) =>
       MyUtils.sideFromId(id) match {
@@ -163,21 +173,24 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   }
 
-//  def pipeSeed(side : Side, midPrice : BigDecimal) = {
-//    var res : List[(Int, BigDecimal, BigDecimal, Boolean)] = List()
-//
-//    (buys, sels) match {
-//
-//      case buys.empty && sels.empty =>
-////        res = res + (bot.buyGridLevels, bot.buyOrderQuantity, bot.startMiddlePrice, false)
-//
-//      case buys.nonEmpty && sels.empty =>
-//      case buys.empty && sels.nonEmpty =>
-//      case buys.nonEmpty && sels.nonEmpty =>
-//
-//
-//    }
-//  }
+  def pipeSeed(side : Side, midPrice : BigDecimal) = {
+    var res : List[(Int, BigDecimal, BigDecimal, Boolean)] = List()
+
+    (buys, sels) match {
+
+      case buys.empty && sels.empty =>
+//        res = res + (bot.buyGridLevels, bot.buyOrderQuantity, bot.startMiddlePrice, false)
+
+      case buys.nonEmpty && sels.empty =>
+      case buys.empty && sels.nonEmpty =>
+      case buys.nonEmpty && sels.nonEmpty =>
+        val anyBuy = buys.head._2
+        val midPrice = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.qtyScale, Side.buy, midPrice, bot.strategy)
+
+
+
+    }
+  }
 
 
   def seedSideZero() : Unit = ???

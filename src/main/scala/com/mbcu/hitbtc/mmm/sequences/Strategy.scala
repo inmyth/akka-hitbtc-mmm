@@ -116,19 +116,26 @@ object Strategy {
     (unitPrice1, qty1)
   }
 
-  def calcMidPrice(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, side: Side, midPrice : BigDecimal) : (BigDecimal, BigDecimal) = {
+  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies) : (BigDecimal, BigDecimal) = {
+
     var levels = 0
     var base = (unitPrice0, qty0)
     side match {
       case Side.buy =>
-        while (base._1 < midPrice) {
+        while (base._1 < marketMidPrice) {
           levels = levels + 1
-          base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.UP)
+          strategy match  {
+            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.UP)
+            case _ => base = step(base._1, base._2, rate, qtyScale, Movement.UP)
+          }
         }
       case _ =>
-        while (base._1 > midPrice) {
+        while (base._1 > marketMidPrice) {
           levels = levels + 1
-          base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.DOWN)
+          strategy match  {
+            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.UP)
+            case _ => base = step(base._1, base._2, rate, qtyScale, Movement.DOWN)
+          }
         }
     }
     (base._1, base._2)

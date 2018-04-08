@@ -106,3 +106,8 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
 - [x] get tick after orders are initiated
 - [] after tick, seed
+
+### Infrastructure Migration
+- [] tickers and market data (candled, etc) will be moved to outside the bot to dedicated exporter
+- [] bot's amountPwr is technically a quantity boost factor that can be arbitrary. It doesn't have to be power(s) of root square of gridSpace.
+- [] count the number of ping-pong (seed-counter)
