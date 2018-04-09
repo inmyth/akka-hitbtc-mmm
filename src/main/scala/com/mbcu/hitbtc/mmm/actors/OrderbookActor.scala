@@ -62,7 +62,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       if (requestingTicker){
         requestingTicker = false
         sendOrders(initialSeed(ticker.last), "seed")
-
+        
       }
 
 
@@ -228,48 +228,34 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     var isPulledFromOtherSide : Boolean = false
     var levels : Int = 0
 
-    if (sortedBuys.isEmpty && sortedSels.isEmpty){
-       qty0 = if (side == Side.buy) bot.buyOrderQuantity else bot.sellOrderQuantity
-       unitPrice0 = bot.startMiddlePrice
-       levels = if (side == Side.buy) bot.buyGridLevels else bot.sellGridLevels
-    }
-    else {
-      side match {
-        case Side.buy =>
-          if (sortedBuys.isEmpty){
-            levels = bot.buyGridLevels
-            getTopSel foreach(o => {
-              qty0 = o.quantity
-              unitPrice0 = o.price
-              isPulledFromOtherSide = true
-            })
-          }
-          else {
-            levels = bot.buyGridLevels - sortedBuys.size
-            getLowBuy foreach(o => {
-              qty0 = o.quantity
-              unitPrice0 = o.price
-            })
-          }
-        case Side.sell =>
-          if (sortedSels.isEmpty){
-            levels = bot.sellGridLevels
-            getTopBuy foreach(o => {
-              qty0 = o.quantity
-              unitPrice0 = o.price
-              isPulledFromOtherSide = true
-            })
-          }
-          else {
-            levels = bot.sellGridLevels - sortedSels.size
-            getLowSel foreach(o => {
-              qty0 = o.quantity
-              unitPrice0 = o.price
-            })
-          }
-        case _ => println("Orderbookactor#getPreSeed : _")
+    var order : Option[Order] = None
+    side match {
+      case Side.buy =>
+      sortedBuys.size match {
+        case 0 =>
+          levels = bot.buyGridLevels
+          isPulledFromOtherSide = true
+          order = Some(getTopSel)
+        case _ =>
+          levels = bot.buyGridLevels - sortedBuys.size
+          order = Some(getLowBuy)
       }
+      case Side.sell =>
+        sortedSels.size match {
+          case 0 =>
+            levels = bot.sellGridLevels
+            isPulledFromOtherSide = true
+            order = Some(getTopBuy)
+          case _ =>
+            levels = bot.sellGridLevels - sortedSels.size
+            order = Some(getLowSel)
+        }
+      case _ => println("Orderbookactor#getPreSeed : _")
     }
+    order foreach (o => {
+      qty0 = o.quantity
+      unitPrice0 = o.price
+    })
     (levels, qty0, unitPrice0, isPulledFromOtherSide)
   }
 
@@ -281,18 +267,17 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
      collection.immutable.Seq(sels.toSeq.map(_._2).sortWith(_.price < _.price) : _*)
    }
 
-
   def addBuy(order : Order) : Unit = buys put (order.id, order)
 
   def addSel(order : Order) : Unit = sels put (order.id, order)
 
-  override def getTopSel: Option[Order] = sortedSels.lift(0)
+  override def getTopSel: Order = sortedSels.head
 
-  override def getLowSel: Option[Order] = sortedSels.lastOption
+  override def getLowSel: Order = sortedSels.last
 
-  override def getTopBuy: Option[Order] = sortedBuys.lift(0)
+  override def getTopBuy: Order = sortedBuys.head
 
-  override def getLowBuy: Option[Order] = sortedBuys.lastOption
+  override def getLowBuy: Order = sortedBuys.last
 
    def dump() : String = {
     val builder = StringBuilder.newBuilder

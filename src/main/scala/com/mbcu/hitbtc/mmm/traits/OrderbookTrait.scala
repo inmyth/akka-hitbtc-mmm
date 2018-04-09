@@ -6,8 +6,8 @@ trait OrderbookTrait {
 
 
 
-  def getTopSel : Option[Order]
-  def getLowSel : Option[Order]
-  def getTopBuy : Option[Order]
-  def getLowBuy : Option[Order]
+  def getTopSel : Order
+  def getLowSel : Order
+  def getTopBuy : Order
+  def getLowBuy : Order
 }
