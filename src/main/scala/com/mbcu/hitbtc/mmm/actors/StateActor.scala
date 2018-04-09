@@ -3,7 +3,7 @@ package com.mbcu.hitbtc.mmm.actors
 import akka.actor.{Actor, ActorRef, Props}
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor._
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
-import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendNewOrder, SmartSort}
+import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendNewOrders, SmartSort}
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
 import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
@@ -17,7 +17,9 @@ object StateActor {
 
   case class SmartSort(ordersOption : Option[Seq[Order]])
 
-  case class SendNewOrder(no : NewOrder, as : String)
+  case class SendNewOrders(no : Seq[NewOrder], as : String)
+
+  case class SendCancelOrders(c : Seq[String])
 
   case class ReqTick(symbol : String)
 }
@@ -69,7 +71,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
       }
 
 
-    case SendNewOrder(newOrder, as) => main foreach (_ ! SendNewOrder(newOrder, as))
+    case SendNewOrders(newOrders, as) => main foreach (_ ! SendNewOrders(newOrders, as))
 
     case OrderNew(order) => context.actorSelection(s"/user/main/state/${order.symbol}") ! OrderNew(order)
 

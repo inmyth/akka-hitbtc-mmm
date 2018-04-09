@@ -3,7 +3,7 @@ package com.mbcu.hitbtc.mmm.actors
 import akka.actor.{Actor, ActorRef, Props}
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor.{CancelInvalidOrder, InitCompleted, InitOrder, Sort}
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
-import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
+import com.mbcu.hitbtc.mmm.actors.StateActor.{SendNewOrders}
 import com.mbcu.hitbtc.mmm.models.internal.{Bot, Config}
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
 import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
@@ -61,6 +61,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case GotTicker(ticker)  =>
       if (requestingTicker){
         requestingTicker = false
+        sendOrders(initialSeed(ticker.last), "seed")
 
       }
 
@@ -80,8 +81,8 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case OrderFilled(order) =>
       remove(order)
       sort(order.side)
-      counter(order) foreach (no => sendOrder(no, "counter"))
-      balancer(order.side) foreach (no => sendOrder(no, "balancer"))
+      sendOrders(counter(order), "counter")
+      sendOrders(balancer(order.side), "balancer")
 
     case OrderPartiallyFilled(order) =>
       add(order)
@@ -92,8 +93,8 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       sort(order.side)
   }
 
-  def sendOrder(no : NewOrder, as : String): Unit ={
-    state foreach (_ ! SendNewOrder(no, as))
+  def sendOrders(no : Seq[NewOrder], as : String): Unit ={
+    state foreach (_ ! SendNewOrders(no, as))
   }
 
   def add(order : Order) : Unit = {
@@ -173,29 +174,52 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   }
 
-  def pipeSeed(side : Side, midPrice : BigDecimal) = {
-    var res : List[(Int, BigDecimal, BigDecimal, Boolean)] = List()
+  def initialSeed(midPrice : BigDecimal): Seq[NewOrder] = {
+    val qtyPower = bot.quantityPower
+    val qtyScale = bot.qtyScale
+    val symbol = bot.pair
+    val gridSpace = bot.gridSpace
+    val strategy = bot.strategy
+    val maxPrice = bot.maxPrice
+    val minPrice = bot.minPrice
+    var res : Seq[NewOrder] = Seq.empty[NewOrder]
+
+    var buyQty = BigDecimal(0)
+    var selQty = BigDecimal(0)
+    var calcMidPrice = midPrice
 
     (buys, sels) match {
-
       case buys.empty && sels.empty =>
-//        res = res + (bot.buyGridLevels, bot.buyOrderQuantity, bot.startMiddlePrice, false)
+        buyQty = bot.buyOrderQuantity
+        selQty = bot.sellOrderQuantity
+        calcMidPrice = midPrice
 
       case buys.nonEmpty && sels.empty =>
+        val anyBuy  = buys.head._2
+        val calcMid = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.qtyScale, Side.buy, midPrice, bot.strategy)
+        buyQty = calcMid._2
+        selQty = calcMid._2
+        calcMidPrice = calcMid._1
+
       case buys.empty && sels.nonEmpty =>
+        val anySel  = sels.head._2
+        val calcMid = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.qtyScale, Side.sell, midPrice, bot.strategy)
+        buyQty = calcMid._2
+        selQty = calcMid._2
+        calcMidPrice = calcMid._1
+
       case buys.nonEmpty && sels.nonEmpty =>
-        val anyBuy = buys.head._2
-        val midPrice = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.qtyScale, Side.buy, midPrice, bot.strategy)
-
-
-
+        val anyBuy  = buys.head._2
+        val calcMid = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.qtyScale, Side.buy, midPrice, bot.strategy)
+        buyQty = calcMid._2
+        selQty = calcMid._2
+        calcMidPrice = calcMid._1
     }
+
+    res ++= Strategy.seed(buyQty, calcMidPrice, qtyPower, qtyScale, symbol, bot.buyGridLevels, gridSpace, side = Side.buy, isPulledFromOtherSide = false, strategy = strategy, maxPrice = maxPrice, minPrice = minPrice)
+    res ++= Strategy.seed(selQty, calcMidPrice, qtyPower, qtyScale, symbol, bot.buyGridLevels, gridSpace, side = Side.sell, isPulledFromOtherSide = false, strategy = strategy, maxPrice = maxPrice, minPrice = minPrice)
+    res
   }
-
-
-  def seedSideZero() : Unit = ???
-
-  def seedSide() : Unit = ???
 
 
   def getPreSeed(side : Side) : (Int, BigDecimal, BigDecimal, Boolean) = {

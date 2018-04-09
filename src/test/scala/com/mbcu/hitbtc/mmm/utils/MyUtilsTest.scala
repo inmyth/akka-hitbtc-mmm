@@ -86,5 +86,4 @@ class MyUtilsTest extends FunSuite {
     assert(levels === 3)
   }
 
-
 }

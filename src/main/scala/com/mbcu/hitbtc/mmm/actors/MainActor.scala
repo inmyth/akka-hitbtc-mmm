@@ -7,7 +7,7 @@ import akka.dispatch.ExecutionContexts._
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor.InitCompleted
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
-import com.mbcu.hitbtc.mmm.actors.StateActor.SendNewOrder
+import com.mbcu.hitbtc.mmm.actors.StateActor.{SendNewOrders}
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.SubscribeMarket.Market
@@ -113,11 +113,13 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case OrderSuspended(order) => error(s"Suspended id : ${order.clientOrderId} symbol:${order.symbol} side:${order.side}")
 
-    case SendNewOrder(newOrder, as) =>
-      info(
-        s"""Sending new order as $as
-           |$newOrder""".stripMargin)
-      ws foreach (_ ! SendJs(Json.toJson(newOrder)))
+    case SendNewOrders(newOrders, as) =>
+      newOrders.foreach(no => {
+        info(
+          s"""Sending new order as $as
+             |$no""".stripMargin)
+        ws foreach (_ ! SendJs(Json.toJson(no)))
+      })
 
     case ErrorNonAffecting(er, id) => self ! HandleRPCError(er, id)
 

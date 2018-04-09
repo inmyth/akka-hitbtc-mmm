@@ -208,7 +208,7 @@ class StrategyTest extends FunSuite {
     val midPrice = BigDecimal("1.02")
     val rate = BigDecimal("1.01")
     val buyGridLevels = 3
-    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice)
+    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice, Strategies.ppt)
     val res2 = Strategy.seed(res1._2, res1._1, amtPower1, 2, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
 
     assert(res1._1 === BigDecimal("1.0201"))
@@ -232,7 +232,7 @@ class StrategyTest extends FunSuite {
     val rate = BigDecimal("1.01")
     val buyGridLevels = 2
 
-    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice)
+    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice, Strategies.ppt)
     val res2 = Strategy.seed(res1._2, res1._1, amtPower1, XRPscale, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
 
     assert(res2.head.params.price === unitPrice0)
@@ -254,7 +254,7 @@ class StrategyTest extends FunSuite {
     val midPrice = BigDecimal("0.98")
     val rate = BigDecimal("1.01")
     val selGridLevels = 3
-    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower2, rate, XRPscale, Side.sell, midPrice)
+    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.sell, midPrice, Strategies.ppt)
     val res2 = Strategy.seed(res1._2, res1._1, amtPower2, XRPscale, order.symbol, selGridLevels, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
     assert(res1._1 === BigDecimal("0.9705901479276445"))
     assert(res1._2 === BigDecimal("824.241"))
@@ -276,7 +276,7 @@ class StrategyTest extends FunSuite {
     val midPrice = BigDecimal("0.991")
     val rate = BigDecimal("1.01")
     val selGridLevels = 3
-    val res1 = Strategy.calcMidPrice(unitPrice0, qty0, amtPower2, rate, XRPscale, Side.sell, midPrice)
+    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.sell, midPrice, Strategies.ppt)
     val res2 = Strategy.seed(res1._2, res1._1, amtPower2, XRPscale, order.symbol, selGridLevels, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
     assert(res1._1 === BigDecimal("0.9900990099009901"))
     assert(res1._2 === BigDecimal("808.0"))
