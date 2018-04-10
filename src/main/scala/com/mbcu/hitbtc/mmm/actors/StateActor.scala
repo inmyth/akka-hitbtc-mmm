@@ -3,9 +3,9 @@ package com.mbcu.hitbtc.mmm.actors
 import akka.actor.{Actor, ActorRef, Props}
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor._
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
-import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendNewOrders, SmartSort}
+import com.mbcu.hitbtc.mmm.actors.StateActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
-import com.mbcu.hitbtc.mmm.models.request.NewOrder
+import com.mbcu.hitbtc.mmm.models.request.{CancelOrder, NewOrder}
 import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
@@ -19,9 +19,11 @@ object StateActor {
 
   case class SendNewOrders(no : Seq[NewOrder], as : String)
 
-  case class SendCancelOrders(c : Seq[String])
+  case class SendCancelOrders(c : Seq[CancelOrder])
 
   case class ReqTick(symbol : String)
+
+  case class UnreqTick(symbol : String)
 }
 
 class StateActor (val config : Config) extends Actor with MyLogging  {
@@ -46,7 +48,9 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
         case _ => println("MainActor#ActiveOrders : _")
       }
 
-    case InitCompleted(symbol) => main foreach(_ ! InitCompleted(symbol))
+    case ReqTick(symbol) => main foreach(_ ! ReqTick(symbol))
+
+    case UnreqTick(symbol) => main foreach(_ ! UnreqTick(symbol))
 
     case GotTicker(ticker) => context.actorSelection(s"/user/main/state/${ticker.symbol}") ! GotTicker(ticker)
 
@@ -72,6 +76,8 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
 
     case SendNewOrders(newOrders, as) => main foreach (_ ! SendNewOrders(newOrders, as))
+
+    case SendCancelOrders(cancelOrders) => main foreach (_ ! SendCancelOrders(cancelOrders))
 
     case OrderNew(order) => context.actorSelection(s"/user/main/state/${order.symbol}") ! OrderNew(order)
 

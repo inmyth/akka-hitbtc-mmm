@@ -13,7 +13,6 @@
     "bots" : [
             {
                 "pair": "XRPBTC",
-                "startMiddlePrice": "10",
                 "gridSpace": "0.5",
                 "buyGridLevels": 2,
                 "sellGridLevels": 2,
@@ -21,8 +20,8 @@
                 "sellOrderQuantity": "1",
                 "quantityPower" : 1,
                 "qtyScale" : 0,
-                "strategy" : "ppt",
-                "fillSpread" : true
+                "limitLevels" : true,
+                "strategy" : "ppt"
             }
         ]
 }

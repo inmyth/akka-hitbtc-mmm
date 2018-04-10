@@ -39,7 +39,6 @@ object Env {
 
 case class Bot (
   pair              : String,
-  startMiddlePrice  : BigDecimal,
   gridSpace         : BigDecimal,
   buyGridLevels     : Int,
   sellGridLevels    : Int,
@@ -49,6 +48,7 @@ case class Bot (
   maxPrice          : Option[BigDecimal],
   minPrice          : Option[BigDecimal],
   qtyScale          : Int,
+  limitLevels       : Boolean,
   strategy          : Strategies
   )
 
@@ -61,7 +61,6 @@ object Bot {
     } = new Writes[Bot] {
       def writes(bot: Bot): JsValue = Json.obj(
         "pair" -> bot.pair,
-        "startMiddlePrice" -> bot.startMiddlePrice,
         "gridSpace" -> bot.gridSpace,
         "buyGridLevels" -> bot.buyGridLevels,
         "sellGridLevels" -> bot.sellGridLevels,
@@ -71,13 +70,13 @@ object Bot {
         "maxPrice" -> bot.maxPrice,
         "minPrice" -> bot.minPrice,
         "qtyScale" -> bot.qtyScale,
+        "limitLevels" -> bot.limitLevels,
         "strategy" -> bot.strategy
       )
     }
 
     implicit val botReads: Reads[Bot] = (
       (JsPath \ "pair").read[String] and
-      (JsPath \ "startMiddlePrice").read[BigDecimal] and
       (JsPath \ "gridSpace").read[BigDecimal] and
       (JsPath \ "buyGridLevels").read[Int] and
       (JsPath \ "sellGridLevels").read[Int] and
@@ -87,6 +86,7 @@ object Bot {
       (JsPath \ "maxPrice").readNullable[BigDecimal] and
       (JsPath \ "minPrice").readNullable[BigDecimal] and
       (JsPath \ "qtyScale").read[Int] and
+      (JsPath \ "limitLevels").read[Boolean] and
       (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)
   }

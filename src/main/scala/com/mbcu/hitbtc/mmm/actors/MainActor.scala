@@ -4,10 +4,9 @@ import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
 
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
-import com.mbcu.hitbtc.mmm.actors.OrderbookActor.InitCompleted
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
-import com.mbcu.hitbtc.mmm.actors.StateActor.{SendNewOrders}
+import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendCancelOrders, SendNewOrders, UnreqTick}
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.SubscribeMarket.Market
@@ -92,12 +91,13 @@ class MainActor(configPath : String) extends Actor with MyLogging {
     case LoginSuccess => ws.foreach(_ ! SendJs(SubscribeReports.toJsValue))
 
 
-
     case SubsribeReportsSuccess => info("Subscribe Reports success")
 
     case activeOrders : ActiveOrders => state foreach (_ forward activeOrders)
 
-    case InitCompleted(symbol) => ws foreach(_ ! SendJs(SubscribeMarket(Market.subscribeTicker, symbol)))
+    case ReqTick(symbol) => ws foreach(_ ! SendJs(SubscribeMarket(Market.subscribeTicker, symbol)))
+
+    case UnreqTick(symbol) => ws foreach(_ ! SendJs(SubscribeMarket(Market.unsubscribeTicker, symbol)))
 
     case GotTicker(ticker) => state foreach(_ ! GotTicker(ticker))
 
@@ -120,6 +120,8 @@ class MainActor(configPath : String) extends Actor with MyLogging {
              |$no""".stripMargin)
         ws foreach (_ ! SendJs(Json.toJson(no)))
       })
+
+    case SendCancelOrders(cancelOrders) => cancelOrders.foreach(co => ws foreach(_ ! SendJs(Json.toJson(co))))
 
     case ErrorNonAffecting(er, id) => self ! HandleRPCError(er, id)
 

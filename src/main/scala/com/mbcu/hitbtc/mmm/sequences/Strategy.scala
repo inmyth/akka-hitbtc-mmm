@@ -97,6 +97,44 @@ object Strategy {
 
   }
 
+
+  def seed2 (qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int,
+            qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
+            side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,
+            maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Unit = {
+    var range = 0
+
+    strategy match {
+      case Strategies.ppt => range = if(isPulledFromOtherSide) 3 else 2
+      case Strategies.fullfixed => range = if(isPulledFromOtherSide) 2 else 1
+      case _ => 0
+    }
+
+    (range until (levels + range))
+      .map(n => {
+        val movement = if (side == Side.buy) Movement.DOWN else Movement.UP
+        strategy match {
+
+          case Strategies.ppt =>
+            val r = ONE + gridSpace(mc) / CENT
+            ppt(unitPrice0, qty0, amtPwr, r, qtyScale, movement)
+
+
+          case _ => (ONE, ONE)
+
+
+        }
+
+
+      }
+      )
+      .map(println)
+
+
+  }
+
+
+
   def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : Side, strategy : Strategies, maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
     val newSide = if (side == Side.buy) Side.sell else Side.buy
     seed(qty0, unitPrice0, amtPwr, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, maxPrice, minPrice)
@@ -105,36 +143,45 @@ object Strategy {
   def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, movement: Movement): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
     val mtpBoost = MyUtils sqrt rate pow amtPower
-    val qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * mtpBoost, qtyScale) else MyUtils.roundFloor(qty0(mc) / mtpBoost, qtyScale)
+    var qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * mtpBoost, qtyScale) else MyUtils.roundFloor(qty0(mc) / mtpBoost, qtyScale)
+    if (qty1 <= 0) qty1 = minAmountFromQtyScale(qtyScale)
     (unitPrice1, qty1)
   }
 
+
+
+
+  def minAmountFromQtyScale(qtyScale : Int) : BigDecimal = {
+    ONE.setScale(qtyScale, BigDecimal.RoundingMode.CEILING)
+  }
 
   def step(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) - rate else unitPrice0 + rate
-    val qty1 = qty0
+    var qty1 = qty0
+    if (qty1 <= 0) qty1 = minAmountFromQtyScale(qtyScale)
     (unitPrice1, qty1)
   }
 
-  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies)
+  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, gridSpace : BigDecimal, qtyScale : Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies)
   : (BigDecimal, BigDecimal) = {
     var base = (unitPrice0, qty0)
     var levels = 0
+    val pptRate = ONE + gridSpace(mc) / CENT
     side match {
       case Side.buy =>
         while (base._1 < marketMidPrice) {
           levels = levels + 1
           strategy match  {
-            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.UP)
-            case _ => base = step(base._1, base._2, rate, qtyScale, Movement.UP)
+            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, pptRate, qtyScale, Movement.UP)
+            case _ => base = step(base._1, base._2, gridSpace, qtyScale, Movement.UP)
           }
         }
       case _ =>
         while (base._1 > marketMidPrice) {
           levels = levels + 1
           strategy match  {
-            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, rate, qtyScale, Movement.UP)
-            case _ => base = step(base._1, base._2, rate, qtyScale, Movement.DOWN)
+            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, pptRate, qtyScale, Movement.DOWN)
+            case _ => base = step(base._1, base._2, gridSpace, qtyScale, Movement.DOWN)
           }
         }
     }

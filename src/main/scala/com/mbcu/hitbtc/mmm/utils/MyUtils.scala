@@ -71,4 +71,6 @@ object MyUtils {
   def roundHalfDown(a : BigDecimal, scale : Int) : BigDecimal = {
     a.setScale(scale, RoundingMode.HALF_DOWN)
   }
+
+
 }

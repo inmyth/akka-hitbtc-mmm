@@ -23,7 +23,7 @@ object NewOrderParam {
       )
     }
 
-    implicit val walletReads: Reads[NewOrderParam] = (
+    implicit val newOrderParamReads: Reads[NewOrderParam] = (
       (JsPath \ "clientOrderId").read[String] and
       (JsPath \ "symbol").read[String] and
       (JsPath \ "side").read[Side] and
