@@ -101,36 +101,43 @@ object Strategy {
   def seed2 (qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int,
             qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
             side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,
-            maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Unit = {
+            maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
     var range = 0
 
     strategy match {
-      case Strategies.ppt => range = if(isPulledFromOtherSide) 3 else 2
-      case Strategies.fullfixed => range = if(isPulledFromOtherSide) 2 else 1
+      case Strategies.ppt => range = if(isPulledFromOtherSide) 2 else 1
+      case Strategies.fullfixed => range = if(isPulledFromOtherSide) 1 else 0
       case _ => 0
     }
 
     (range until (levels + range))
       .map(n => {
         val movement = if (side == Side.buy) Movement.DOWN else Movement.UP
-        strategy match {
-
+        val p1q1 = strategy match {
           case Strategies.ppt =>
             val r = ONE + gridSpace(mc) / CENT
-            ppt(unitPrice0, qty0, amtPwr, r, qtyScale, movement)
-
-
+            List.fill(n)(1)
+                .foldLeft(unitPrice0, qty0)((z, i) => ppt(z._1, z._2, amtPwr, r, qtyScale, movement))
           case _ => (ONE, ONE)
-
-
         }
-
-
-      }
+        p1q1
+        }
       )
-      .map(println)
-
-
+      .filter(_._1 > 0)
+      .filter(_._2 > 0)
+      .filter(minPrice match {
+        case Some(mp) => _._1 >= mp
+        case _ => _._1 > ZERO
+      })
+      .filter(maxPrice match {
+        case Some(mp) => _._1 <= mp
+        case None => _._1 < INFINITY
+      })
+      .map(p1q1 => {
+        val newOrderParam = NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, p1q1._1, p1q1._2)
+        val res = NewOrder(newOrderParam.clientOrderId, newOrderParam)
+        res
+      })
   }
 
 

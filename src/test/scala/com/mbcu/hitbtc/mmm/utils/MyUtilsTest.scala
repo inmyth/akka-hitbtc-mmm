@@ -86,4 +86,26 @@ class MyUtilsTest extends FunSuite {
     assert(levels === 3)
   }
 
+
+
+  test("test foldLeft"){
+    def abc(x : Int, y : Int) : (Int, Int) = {
+      (x + 2, y +2)
+    }
+
+    val a = List(1,1,1)
+    val b = a.foldLeft(1,1)((p,q) =>
+    {
+      println(p)
+      abc(p._1, p._2)
+
+    }
+
+    )
+    println("--")
+    println(b)
+
+  }
+
+
 }
