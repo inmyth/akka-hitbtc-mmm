@@ -3,18 +3,21 @@ package com.mbcu.hitbtc.mmm.actors
 import akka.actor.{Actor, ActorRef, Props}
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.simpleemail.model.SendEmailResult
-import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
+import com.mbcu.hitbtc.mmm.actors.SesActor.{CacheMessages, MailSent, MailTimer}
 import jp.co.bizreach.ses.SESClient
 import jp.co.bizreach.ses.models.{Address, Content, Email}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Success, Try}
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContextExecutor
+import scala.util.Try
 
 
 object  SesActor {
   def props(sesKey : Option[String], sesSecret : Option[String], emails : Option[Seq[String]]): Props = Props(new SesActor(sesKey, sesSecret, emails))
 
-  case class SendError(msg :String, shutdownCode : Option[Int])
+  case class CacheMessages(msg :String, shutdownCode : Option[Int])
+
+  object MailTimer
 
   case class MailSent(t : Try[SendEmailResult], shutdownCode : Option[Int])
 
@@ -26,6 +29,9 @@ class SesActor(sesKey : Option[String], sesSecret : Option[String], emails : Opt
   var cli : Option[SESClient] = None
   private implicit val region: Regions = Regions.US_EAST_1
   private var main : Option[ActorRef] = None
+  private var isCaching : Boolean = false
+  private val cacheMsg = new ListBuffer[String]()
+  private var cacheShutdownCode : Option[Int] = None
 
   override def receive: Receive = {
 
@@ -45,8 +51,27 @@ class SesActor(sesKey : Option[String], sesSecret : Option[String], emails : Opt
       }
 
 
-    case SendError(msg, shutdownCode) => sender() ! send("HitBTC Bot Error", msg, shutdownCode)
+    case CacheMessages(msg, shutdownCode) =>
+      if (!isCaching){
+        isCaching = true
+        main foreach(_ ! MailTimer)
+      }
+      cacheMsg += msg
 
+      cacheShutdownCode = (shutdownCode, cacheShutdownCode) match {
+        case (Some(code), None) => Some(code)
+        case (_, Some(-1)) => Some(-1)
+        case (Some(1), Some(1)) => Some(1)
+        case (None ,Some(1)) => Some(1)
+        case (Some(-1), Some(1)) => Some(-1)
+        case _ => None // (None, None)
+      }
+
+    case "execute send" =>
+      send("HitBTC Bot Error", cacheMsg.mkString("\n\n"), cacheShutdownCode)
+      cacheMsg.clear()
+      cacheShutdownCode = None
+      isCaching = false
   }
 
   def send(title: String, body: String, shutdownCode : Option[Int] = None): Unit = {

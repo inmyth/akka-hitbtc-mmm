@@ -1,10 +1,13 @@
-1.6 in progress
-
+1.6
+- added midPrice calculation to estimate new starting point for seed when the bot restarts
+- fixed Strategies (orders placed sequentially from the start)
+- fixed emails
+- added trim and grow
+- added scales on trade and base currency
+- added quantityPower
+- removed midPrice, used ticker instead for fresh start
 
 1.5.2 interim
--
-
-
 
 1.5.1
 - websocket onSendError and onError should return -1
@@ -85,31 +88,27 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] implement full strategy
 - [x] limit by max min prices
 - [x] enumerate side
-- [] check all senders()
 - [x] aws email sender
 - [x] ws listeners handling
 - [x] need to check email sender on small errors
 - [x] assembly deduplication error
 - [x] clean up warnings
-- [] test reconnect after server down
-- [] base needs scale
+- [x] base needs scale
 - [x] estimate midPrice from any order in the orderbook
 - [x] generate orders from order zero
 - [x] ppt supports amtPower
-- [] seed one side : reconstruct only orders close to spread
-- [] add amtPower : Int in botConfig
-- [] initial seed amount must also be different on each price level
-- [] keep number of orders according to config
-- [] merge emails
+- [x] add amtPower : Int in botConfig
+- [x] initial seed amount must also be different on each price level
+- [x] keep number of orders according to config
 - [x] changed stateActor to orderbookActor InitOrders so even empty orders will call orderbook
-- [] seed : reconstruct new seed from a single order, cancel all existing orders (safe for BigDecimal comparison, will deprioritize new orders)
-- [] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
+- [x] seed : reconstruct new seed from a single order, cancel all existing orders (safe for BigDecimal comparison, will deprioritize new orders)
 - [x] get tick after orders are initiated
-- [] after tick, seed
-- [] balancer has to be changed to accomodate order number limit
+- [x] after tick, seed
+- [x] merge emails
+- [] test reconnect after server down
+- [] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
 
-### Infrastructure Migration
-- [] tickers and market data (candled, etc) will be moved to outside the bot to dedicated exporter
-- [] bot's amountPwr is technically a quantity boost factor that can be arbitrary. It doesn't have to be power(s) of root square of gridSpace.
-- [] count the number of ping-pong (seed-counter)
-- [] PPT should only have one quantity for both sides
+
+
+
+

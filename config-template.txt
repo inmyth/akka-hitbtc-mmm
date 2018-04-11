@@ -19,8 +19,10 @@
                 "buyOrderQuantity": "1",
                 "sellOrderQuantity": "1",
                 "quantityPower" : 1,
-                "qtyScale" : 0,
-                "limitLevels" : true,
+                "counterScale" : 0,
+                "baseScale" : 10,
+                "isStrictLevels" : true,
+                "isNoQtyCutoff" : true,
                 "strategy" : "ppt"
             }
         ]

@@ -2,18 +2,16 @@ package com.mbcu.hitbtc.mmm.sequences
 
 import java.math.MathContext
 import java.util.Collections
-import java.util.stream.IntStream
 
-import com.mbcu.hitbtc.mmm.models.internal.Bot
 import com.mbcu.hitbtc.mmm.models.request.{NewOrder, NewOrderParam}
-import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
+import com.mbcu.hitbtc.mmm.models.response.Side
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Movement.Movement
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Strategies
 import com.mbcu.hitbtc.mmm.utils.MyUtils
-import play.api.libs.json.{Format, Reads, Writes}
+import play.api.libs.json.{Reads, Writes}
 
-import scala.util.Random
+import scala.math.BigDecimal.RoundingMode
 
 object Strategy {
   val mc : MathContext = MathContext.DECIMAL64
@@ -35,95 +33,36 @@ object Strategy {
     implicit val strategiesWrites = Writes.enumNameWrites
   }
 
-
   def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int,
-            qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
-            side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,
+            ctrScale : Int, basScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
+            side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies, isNoQtyCutoff : Boolean,
             maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
-    var range = 0
 
-    strategy match {
-      case Strategies.ppt => range = if(isPulledFromOtherSide) 3 else 2
-      case Strategies.fullfixed => range = if(isPulledFromOtherSide) 2 else 1
-      case _ => 0
-    }
-
-    (range until (levels + range))
-      .map(n => {
-        var rate : Option[BigDecimal] = None
-        strategy match {
-          case Strategies.ppt =>
-            val mtp = ONE + gridSpace(mc) / CENT
-            rate = Some(Collections.nCopies(n, ONE).stream().reduce((x, y) => x * mtp).get())
-          case Strategies.fullfixed => rate = Some(gridSpace * n)
-          case _ => rate = None
-        }
-        rate
-      })
-      .map(rate => {
-        var p1q1 : Option[(BigDecimal, BigDecimal)] = None
-        rate match {
-          case Some(r) =>
-            val movement = if (side == Side.buy) Movement.DOWN else Movement.UP
-            strategy match {
-              case Strategies.ppt => p1q1 = Some(ppt(unitPrice0, qty0, amtPwr, r, qtyScale, movement))
-              case Strategies.fullfixed => p1q1 = Some(step(unitPrice0, qty0, r, qtyScale, movement))
-              case _ => p1q1 = None
-            }
-          case _ => p1q1 = None
-        }
-        p1q1
-      })
-      .map(p1q1 => {
-        var newOrderParam : Option[NewOrderParam] = None
-        p1q1 match {
-          case Some(a) => newOrderParam = Some(NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, a._1, a._2))
-          case _ => newOrderParam = None
-        }
-        newOrderParam
-      })
-      .collect{case Some(p) => p}
-      .filter(_.price > ZERO)
-      .filter(_.quantity > ZERO)
-      .filter(minPrice match {
-        case Some(mp) => _.price >= mp
-        case _ => _.price > ZERO
-      })
-      .filter(maxPrice match {
-        case Some(mp) => _.price <= mp
-        case None => _.price < INFINITY
-      })
-      .map(p => NewOrder(p.clientOrderId, p))
-
-  }
-
-
-  def seed2 (qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int,
-            qtyScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
-            side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies,
-            maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
-    var range = 0
-
-    strategy match {
-      case Strategies.ppt => range = if(isPulledFromOtherSide) 2 else 1
-      case Strategies.fullfixed => range = if(isPulledFromOtherSide) 1 else 0
+    val range = strategy match {
+      case Strategies.ppt => if(isPulledFromOtherSide) 2 else 1
+      case Strategies.fullfixed => if(isPulledFromOtherSide) 2 else 1
       case _ => 0
     }
 
     (range until (levels + range))
       .map(n => {
         val movement = if (side == Side.buy) Movement.DOWN else Movement.UP
-        val p1q1 = strategy match {
+        strategy match {
           case Strategies.ppt =>
-            val r = ONE + gridSpace(mc) / CENT
+            val mtp = ONE + gridSpace(mc) / CENT
             List.fill(n)(1)
-                .foldLeft(unitPrice0, qty0)((z, i) => ppt(z._1, z._2, amtPwr, r, qtyScale, movement))
-          case _ => (ONE, ONE)
+                .foldLeft(unitPrice0, qty0)((z, i) => ppt(z._1, z._2, amtPwr, mtp, ctrScale, movement))
+
+          case Strategies.fullfixed =>
+            List.fill(n)(1)
+              .foldLeft(unitPrice0, qty0)((z, i) => step(z._1, z._2, gridSpace, ctrScale, movement))
+
+          case _ => (ZERO, ZERO)
         }
-        p1q1
         }
       )
       .filter(_._1 > 0)
+      .map(p1q1 => if (p1q1._2 <= 0 && isNoQtyCutoff) (p1q1._1, calcMinAmount(ctrScale)) else p1q1)
       .filter(_._2 > 0)
       .filter(minPrice match {
         case Some(mp) => _._1 >= mp
@@ -134,61 +73,58 @@ object Strategy {
         case None => _._1 < INFINITY
       })
       .map(p1q1 => {
-        val newOrderParam = NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, p1q1._1, p1q1._2)
-        val res = NewOrder(newOrderParam.clientOrderId, newOrderParam)
-        res
+        val newOrderParam = NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, p1q1._1.setScale(basScale, RoundingMode.HALF_EVEN), p1q1._2)
+        NewOrder(newOrderParam.clientOrderId, newOrderParam)
       })
   }
 
 
-
-  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int, qtyScale : Int, symbol : String, gridSpace : BigDecimal, side : Side, strategy : Strategies, maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
+  def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int, ctrScale : Int, basScale : Int, symbol : String, gridSpace : BigDecimal, side : Side,
+              strategy : Strategies, isNoQtyCutoff : Boolean,
+              maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None)
+  : Seq[NewOrder] = {
     val newSide = if (side == Side.buy) Side.sell else Side.buy
-    seed(qty0, unitPrice0, amtPwr, qtyScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, maxPrice, minPrice)
+    seed(qty0, unitPrice0, amtPwr, ctrScale, basScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, isNoQtyCutoff, maxPrice, minPrice)
   }
 
-  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, qtyScale : Int, movement: Movement): (BigDecimal, BigDecimal) ={
+  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, ctrScale : Int, movement: Movement): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
     val mtpBoost = MyUtils sqrt rate pow amtPower
-    var qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * mtpBoost, qtyScale) else MyUtils.roundFloor(qty0(mc) / mtpBoost, qtyScale)
-    if (qty1 <= 0) qty1 = minAmountFromQtyScale(qtyScale)
+    var qty1 = if (movement == Movement.DOWN) MyUtils.roundCeil(qty0 * mtpBoost, ctrScale) else MyUtils.roundFloor(qty0(mc) / mtpBoost, ctrScale)
     (unitPrice1, qty1)
   }
 
-
-
-
-  def minAmountFromQtyScale(qtyScale : Int) : BigDecimal = {
-    ONE.setScale(qtyScale, BigDecimal.RoundingMode.CEILING)
-  }
-
-  def step(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, qtyScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={
+  def step(unitPrice0 : BigDecimal, qty0 : BigDecimal, rate : BigDecimal, ctrScale : Int, movement: Movement ): (BigDecimal, BigDecimal) ={
     val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) - rate else unitPrice0 + rate
-    var qty1 = qty0
-    if (qty1 <= 0) qty1 = minAmountFromQtyScale(qtyScale)
+    val qty1 = qty0
     (unitPrice1, qty1)
   }
 
-  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, gridSpace : BigDecimal, qtyScale : Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies)
+  def calcMinAmount(ctrScale : Int) : BigDecimal = {
+    ONE.setScale(ctrScale, BigDecimal.RoundingMode.CEILING)
+  }
+
+  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, gridSpace : BigDecimal, ctrScale : Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies)
   : (BigDecimal, BigDecimal) = {
     var base = (unitPrice0, qty0)
     var levels = 0
-    val pptRate = ONE + gridSpace(mc) / CENT
+    val mtp = ONE + gridSpace(mc) / CENT
+
     side match {
       case Side.buy =>
         while (base._1 < marketMidPrice) {
           levels = levels + 1
           strategy match  {
-            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, pptRate, qtyScale, Movement.UP)
-            case _ => base = step(base._1, base._2, gridSpace, qtyScale, Movement.UP)
+            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, mtp, ctrScale, Movement.UP)
+            case _ => base = step(base._1, base._2, gridSpace, ctrScale, Movement.UP)
           }
         }
       case _ =>
         while (base._1 > marketMidPrice) {
           levels = levels + 1
           strategy match  {
-            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, pptRate, qtyScale, Movement.DOWN)
-            case _ => base = step(base._1, base._2, gridSpace, qtyScale, Movement.DOWN)
+            case Strategies.ppt => base = ppt(base._1, base._2, amtPower, mtp, ctrScale, Movement.DOWN)
+            case _ => base = step(base._1, base._2, gridSpace, ctrScale, Movement.DOWN)
           }
         }
     }

@@ -38,18 +38,20 @@ object Env {
 }
 
 case class Bot (
-  pair              : String,
-  gridSpace         : BigDecimal,
-  buyGridLevels     : Int,
-  sellGridLevels    : Int,
-  buyOrderQuantity  : BigDecimal,
-  sellOrderQuantity : BigDecimal,
-  quantityPower     : Int,
-  maxPrice          : Option[BigDecimal],
-  minPrice          : Option[BigDecimal],
-  qtyScale          : Int,
-  limitLevels       : Boolean,
-  strategy          : Strategies
+                 pair              : String,
+                 gridSpace         : BigDecimal,
+                 buyGridLevels     : Int,
+                 sellGridLevels    : Int,
+                 buyOrderQuantity  : BigDecimal,
+                 sellOrderQuantity : BigDecimal,
+                 quantityPower     : Int,
+                 maxPrice          : Option[BigDecimal],
+                 minPrice          : Option[BigDecimal],
+                 counterScale      : Int,
+                 baseScale         : Int,
+                 isStrictLevels    : Boolean,
+                 isNoQtyCutoff     : Boolean,
+                 strategy          : Strategies
   )
 
 object Bot {
@@ -69,8 +71,10 @@ object Bot {
         "quantityPower" -> bot.quantityPower,
         "maxPrice" -> bot.maxPrice,
         "minPrice" -> bot.minPrice,
-        "qtyScale" -> bot.qtyScale,
-        "limitLevels" -> bot.limitLevels,
+        "counterScale" -> bot.counterScale,
+        "baseScale" -> bot.baseScale,
+        "isStrictLevels" -> bot.isStrictLevels,
+        "isNoQtyCutoff" -> bot.isNoQtyCutoff,
         "strategy" -> bot.strategy
       )
     }
@@ -85,8 +89,10 @@ object Bot {
       (JsPath \ "quantityPower").read[Int] and
       (JsPath \ "maxPrice").readNullable[BigDecimal] and
       (JsPath \ "minPrice").readNullable[BigDecimal] and
-      (JsPath \ "qtyScale").read[Int] and
-      (JsPath \ "limitLevels").read[Boolean] and
+      (JsPath \ "counterScale").read[Int] and
+      (JsPath \ "baseScale").read[Int] and
+      (JsPath \ "isStrictLevels").read[Boolean] and
+      (JsPath \ "isNoQtyCutoff").read[Boolean] and
       (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)
   }

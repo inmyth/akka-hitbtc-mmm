@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
 import scala.concurrent.duration._
 import akka.dispatch.ExecutionContexts._
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
-import com.mbcu.hitbtc.mmm.actors.SesActor.{MailSent, SendError}
+import com.mbcu.hitbtc.mmm.actors.SesActor.{CacheMessages, MailSent, MailTimer}
 import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendCancelOrders, SendNewOrders, UnreqTick}
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
@@ -40,7 +40,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
   private var config: Option[Config] = None
   private var ws: Option[ActorRef] = None
   private var parser: Option[ActorRef] = None
-  private var cancellable : Option[Cancellable] = None
+  private var logCancellable : Option[Cancellable] = None
   private var state : Option[ActorRef] = None
   private var ses : Option[ActorRef] = None
   implicit val ec: ExecutionContextExecutor = global
@@ -66,7 +66,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
           state foreach (_ ! "start")
           ws = Some(context.actorOf(Props(new WsActor(ENDPOINT)), name = "ws"))
           val scheduleActor = context.actorOf(Props(classOf[ScheduleActor]))
-          cancellable =Some(
+          logCancellable =Some(
             context.system.scheduler.schedule(
               10 second,
               (if (cfg.env.logSeconds < 5) 5 else cfg.env.logSeconds) second,
@@ -158,6 +158,13 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case HandleError(msg, code) => handleError(msg, code)
 
+    case MailTimer =>
+      ses match {
+        case Some(s) => context.system.scheduler.scheduleOnce(5 second, s, "execute send")
+        case _ => warn("MainActor#MailTimer no ses actor")
+      }
+
+
     case MailSent(t, shutdownCode) =>
       t match {
         case Success(_) => info("Email Sent")
@@ -179,7 +186,7 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
   def handleError(s: String, code : Option[Int]) : Unit = {
     error(s)
-    ses foreach(_ ! SendError(s, code))
+    ses foreach(_ ! CacheMessages(s, code))
   }
 
 

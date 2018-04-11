@@ -2,11 +2,11 @@ package com.mbcu.hitbtc.mmm.sequences
 
 import java.math.MathContext
 
+import com.mbcu.hitbtc.mmm.models.internal.Bot
 import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
-import com.mbcu.hitbtc.mmm.sequences.Strategy.{ONE, Strategies, mc}
+import com.mbcu.hitbtc.mmm.sequences.Strategy._
 import com.mbcu.hitbtc.mmm.utils.MyUtils
-import org.scalactic.source.Position
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.FunSuite
 
 import scala.math.BigDecimal.RoundingMode
 
@@ -16,15 +16,16 @@ class StrategyTest extends FunSuite {
   val ONE = BigDecimal("1")
   val CENT = BigDecimal("100")
 
-  val qty = BigDecimal("5000")
-  val price = BigDecimal("0.000001280")
-  val gridSpace = BigDecimal("1")
-  val mtp: BigDecimal = ONE + gridSpace(mc) / CENT
-  val NOAHScale = -3
-  val amtPower1 = 1
-  val amtPower2 = 2
 
-  val order = Order(
+  val botNoah1 = new Bot("NOAHBTC", BigDecimal("0.5"), 5, 10, BigDecimal(5000), BigDecimal(5000),
+    2, None, None, -3, 10,
+    true, true, Strategies.ppt)
+
+  val botNoah2 = new Bot("NOAHBTC", BigDecimal("0.0000001"), 5, 10, BigDecimal(5000), BigDecimal(5000),
+    2, None, None, -3, 10,
+    true, true, Strategies.fullfixed)
+
+  val orderNoah1 = Order(
     "testID",
     "clientabc",
     "NOAHBTC",
@@ -32,8 +33,8 @@ class StrategyTest extends FunSuite {
     "new",
     "limit",
     "GTC",
-    qty,
-    price,
+    BigDecimal("5000"),
+    BigDecimal("0.000001280"),
     BigDecimal("0"),
     "2018-02-17T21:08:01.983Z",
     "2018-02-17T21:08:01.983Z",
@@ -42,271 +43,111 @@ class StrategyTest extends FunSuite {
     "new"
   )
 
-
-
-  test("ppt seed sell pulledFromOtherSide") {
-    val res = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.ppt)
-    assert(res.lengthCompare(3) == 0)
-    assert(res.head.params.price == price * mtp * mtp)
-    assert(res.head.params.quantity == MyUtils.roundFloor(qty(mc) / mtp, NOAHScale))
-    assert(res(1).params.price / res.head.params.price == mtp)
-    //    assert(res(1).params.quantity(mc) / res(0).params.quantity == ONE(mc) / MyUtils.sqrt(mtp))
+  implicit class ScaledBigDecimal(s: BigDecimal) {
+     def ten : BigDecimal = s.setScale(10, RoundingMode.HALF_EVEN)
   }
 
+  test("ppt seed pulledFromOtherSide") {
+    val initLevel = 2
 
-  test("ppt seed sell") {
-    val res = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
-    assert(res.lengthCompare(3) == 0)
-    assert(res.head.params.price == price * mtp)
-    assert(res.head.params.quantity == MyUtils.roundFloor(qty(mc) / MyUtils.sqrt(mtp), NOAHScale))
-    assert(res(1).params.price / res.head.params.price == mtp)
-    //    assert((res(1).params.quantity(mc) / res.head.params.quantity) == ONE(mc) / MyUtils.sqrt(mtp))
+    var b = botNoah1
+    var o = orderNoah1
+    val pullFromBuy = Strategy.seed(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.sellGridLevels, b.gridSpace, Side.sell, true, Strategies.ppt, true, b.maxPrice, b.minPrice)
+
+    val mtp = MyUtils.sqrt(ONE + b.gridSpace(mc) / CENT).pow(b.quantityPower)
+    assert(pullFromBuy.lengthCompare(b.sellGridLevels) == 0)
+    assert(pullFromBuy.head.params.price == (o.price * mtp.pow(initLevel)).ten)
+    assert(pullFromBuy.head.params.quantity == BigDecimal(3000))
+    assert(pullFromBuy(1).params.price == (o.price * mtp.pow(initLevel + 1)).ten)
+    assert(pullFromBuy(1).params.quantity == BigDecimal(2000))
+    assert(pullFromBuy(8).params.price == (o.price * mtp.pow(initLevel + 8)).ten)
+    assert(pullFromBuy(8).params.quantity == BigDecimal(1000))
+
+    val pullFromSell = Strategy.seed(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.buy, true, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    assert(pullFromSell.lengthCompare(b.buyGridLevels) == 0)
+    assert(pullFromSell.head.params.price == (o.price / mtp.pow(initLevel)).ten)
+    assert(pullFromSell.head.params.quantity == BigDecimal(7000))
+    assert(pullFromSell(1).params.price == (o.price / mtp.pow(initLevel + 1)).ten)
+    assert(pullFromSell(1).params.quantity == BigDecimal(8000))
   }
 
-//  test("ppt buy sell pulledFromOtherSide") {
-//    val res = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.ppt)
-//    assert(res.lengthCompare(3) == 0)
-//    assert(res.head.params.price.setScale(10, RoundingMode.HALF_EVEN) == (price(mc) /  mtp / mtp).setScale(10, RoundingMode.HALF_EVEN))
-//    assert(res.head.params.quantity == qty(mc) * mtp )
-//    assert(res.head.params.price / res(1).params.price == mtp)
-//    assert(res.head.params.price / res(2).params.price == mtp * mtp)
-//  }
+  test("ppt counter"){
+    var b = botNoah1
+    var o = orderNoah1
+    val mtp = MyUtils.sqrt(ONE + b.gridSpace(mc) / CENT).pow(b.quantityPower)
 
+    val counterBuy = Strategy.counter(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.gridSpace, Side.buy, b.strategy, b.isNoQtyCutoff, b.maxPrice, b.minPrice)
+    assert(counterBuy.head.params.side == Side.sell)
+    assert(counterBuy.head.params.price == (o.price * mtp).ten)
+    assert(counterBuy.head.params.quantity == BigDecimal(4000))
 
-  test("ppt seed buy") {
-    val res = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.buy, isPulledFromOtherSide = false, Strategies.ppt)
-    assert(res.lengthCompare(3) == 0)
-    assert(res.head.params.price == price(mc) /  mtp )
-    assert(res.head.params.quantity == MyUtils.roundCeil(qty(mc) * MyUtils.sqrt(mtp), NOAHScale))
-    assert(res.head.params.price / res(1).params.price == mtp)
-    assert(res.head.params.price / res(2).params.price == mtp * mtp)
+    val counterSel = Strategy.counter(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.gridSpace, Side.sell, b.strategy, b.isNoQtyCutoff, b.maxPrice, b.minPrice)
+    assert(counterSel.head.params.side == Side.buy)
+    assert(counterSel.head.params.price == (o.price(mc) /  mtp).ten)
+    assert(counterSel.head.params.quantity == BigDecimal(6000))
   }
 
-  test("ppt counter from buy"){
-    val res = Strategy.counter(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, BigDecimal("1"), Side.buy, Strategies.ppt)
-    assert(res.lengthCompare(1) == 0)
-    assert(res.head.params.side == Side.sell)
-    assert(res.head.params.price == price(mc) *  mtp )
-    assert(res.head.params.quantity == MyUtils.roundFloor(qty(mc) / MyUtils.sqrt(mtp), NOAHScale))
+  test("fullFixed seed pulledFromOtherSide"){
+    val initLevel = 2
+    var b = botNoah2
+    var o = orderNoah1
+    val pullFromBuy = Strategy.seed(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.sellGridLevels, b.gridSpace, Side.sell, true, Strategies.fullfixed, true, b.maxPrice, b.minPrice)
+    assert(pullFromBuy.head.params.price == o.price + initLevel * b.gridSpace)
+    assert(pullFromBuy(1).params.price == o.price + (initLevel + 1) * b.gridSpace)
+    assert(pullFromBuy(2).params.price == o.price + (initLevel + 2) * b.gridSpace)
+    assert(pullFromBuy.head.params.quantity == o.quantity)
+    assert(pullFromBuy(1).params.quantity == o.quantity)
+    assert(pullFromBuy(2).params.quantity == o.quantity)
+
+    val pullFromSell = Strategy.seed(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.buy, true, Strategies.fullfixed, true, b.maxPrice, b.minPrice)
+    assert(pullFromSell.head.params.price == o.price - initLevel * b.gridSpace)
+    assert(pullFromSell(1).params.price == o.price - (initLevel + 1) * b.gridSpace)
+    assert(pullFromSell(2).params.price == o.price - (initLevel + 2) * b.gridSpace)
+    assert(pullFromSell.head.params.quantity == o.quantity)
+    assert(pullFromSell(1).params.quantity == o.quantity)
+    assert(pullFromSell(2).params.quantity == o.quantity)
   }
 
-  test("ppt counter from sell"){
-    val res = Strategy.counter(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, BigDecimal("1"), Side.sell, Strategies.ppt)
-    assert(res.lengthCompare(1) == 0)
-    assert(res.head.params.side == Side.buy)
-    assert(res.head.params.price == price(mc) /  mtp )
-    assert(res.head.params.quantity == MyUtils.roundCeil(qty(mc) * MyUtils.sqrt(mtp), NOAHScale))
+  test("fullFixed counter") {
+    var b = botNoah2
+    var o = orderNoah1
+    val counterBuy = Strategy.counter(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.gridSpace, Side.buy, b.strategy, b.isNoQtyCutoff, b.maxPrice, b.minPrice)
+    assert(counterBuy.head.params.side == Side.sell)
+    assert(counterBuy.head.params.price == o.price + b.gridSpace )
+    assert(counterBuy.head.params.quantity == b.sellOrderQuantity)
+
+    val counterSell = Strategy.counter(o.quantity, o.price, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.gridSpace, Side.sell, b.strategy, b.isNoQtyCutoff, b.maxPrice, b.minPrice)
+    assert(counterSell.head.params.side == Side.buy)
+    assert(counterSell.head.params.price == o.price - b.gridSpace )
+    assert(counterSell.head.params.quantity == b.buyOrderQuantity)
   }
 
-  test("full seed sell pulledFromOtherSide") {
-    val res = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.fullfixed)
-    assert(res.lengthCompare(3) == 0)
-    assert(res.head.params.price == price + 2 * gridSpace)
-    assert(res(1).params.price == price + 3 * gridSpace)
-    assert(res(2).params.price == price + 4 * gridSpace)
-    assert(res.head.params.quantity == qty)
-    assert(res(1).params.quantity == qty)
-    assert(res(2).params.quantity == qty)
-  }
-
-
-  test("full seed sell") {
-    val res = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.fullfixed)
-    assert(res.lengthCompare(3) == 0)
-    assert(res.head.params.price == price + 1 * gridSpace)
-    assert(res(1).params.price == price + 2 * gridSpace)
-    assert(res(2).params.price == price + 3 * gridSpace)
-    assert(res.head.params.quantity == qty)
-    assert(res(1).params.quantity == qty)
-    assert(res(2).params.quantity == qty)
-  }
-
-
-
-//  test("full seed buy pulledFromOtherSide") {
-//    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
-//    assert(res.lengthCompare(3) == 0)
-//    assert(res.head.params.price == price - 2 * gridSpace)
-//    assert(res(1).params.price == price - 3 * gridSpace)
-//    assert(res(2).params.price == price - 4 * gridSpace)
-//    assert(res.head.params.quantity == qty)
-//    assert(res(1).params.quantity == qty)
-//    assert(res(2).params.quantity == qty)
-//  }
-
-
-//  test("full seed buy") {
-//    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.fullfixed)
-//    assert(res.lengthCompare(3) == 0)
-//    assert(res.head.params.price == price - 1 * gridSpace)
-//    assert(res(1).params.price == price - 2 * gridSpace)
-//    assert(res(2).params.price == price - 3 * gridSpace)
-//    assert(res.head.params.quantity == qty)
-//    assert(res(1).params.quantity == qty)
-//    assert(res(2).params.quantity == qty)
-//  }
-
-  test("full counter from buy"){
-    val res = Strategy.counter(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, BigDecimal("1"), Side.buy, Strategies.fullfixed)
-    assert(res.lengthCompare(1) == 0)
-    assert(res.head.params.side == Side.sell)
-    assert(res.head.params.price == price +  gridSpace )
-    assert(res.head.params.quantity == qty)
-  }
-
-//  test("full counter from sell"){
-//    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.sell, Strategies.fullfixed)
-//    assert(res.lengthCompare(1) == 0)
-//    assert(res.head.params.side == Side.buy)
-//    assert(res.head.params.price == price(mc) - gridSpace )
-//    assert(res.head.params.quantity == qty)
-//  }
-
-
-  test("full seed buy pulledFromOtherSide, negative price") {
-    val res = Strategy.seed(order.quantity, BigDecimal("0.00009"), amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
-    assert(res.lengthCompare(0) == 0)
-  }
-
-//  test("full seed buy with minPrice, 10 levels") {
-//    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 10, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.fullfixed, None, Some(BigDecimal(5)))
-//    assert(res.lengthCompare(5) == 0)
-//    assert(res.head.params.price == price - 1 * gridSpace)
-//    assert(res(1).params.price == price - 2 * gridSpace)
-//    assert(res(2).params.price == price - 3 * gridSpace)
-//    assert(res.head.params.quantity == qty)
-//    assert(res(1).params.quantity == qty)
-//    assert(res(2).params.quantity == qty)
-//  }
-//
-//  test("full seed sell with maxPrice, 10 levels") {
-//    val res = Strategy.seed(order.quantity, order.price, amtPower1, XRPscale, order.symbol, 10, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.fullfixed, Some(BigDecimal("15")), None)
-//    assert(res.lengthCompare(5) == 0)
-//    assert(res.head.params.price == price + 1 * gridSpace)
-//    assert(res(1).params.price == price + 2 * gridSpace)
-//    assert(res(2).params.price == price + 3 * gridSpace)
-//    assert(res.head.params.quantity == qty)
-//    assert(res(1).params.quantity == qty)
-//    assert(res(2).params.quantity == qty)
-//  }
-
-//  test("full counter from buy with maxPrice"){
-//    val res = Strategy.counter(order.quantity, order.price, amtPower1, XRPscale, order.symbol, BigDecimal("1"), Side.buy, Strategies.fullfixed, Some(BigDecimal("10.7")), None)
+//  test("full seed buy pulledFromOtherSide, negative price") {
+//    val res = Strategy.seed(order.quantity, BigDecimal("0.00009"), amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.buy,  isPulledFromOtherSide = true, Strategies.fullfixed)
 //    assert(res.lengthCompare(0) == 0)
 //  }
 
-  test("full counter from sell with minPrice"){
-    val res = Strategy.counter(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, BigDecimal("1"), Side.sell, Strategies.fullfixed,  None,  Some(BigDecimal("9.2")))
-    assert(res.lengthCompare(0) == 0)
-  }
+  test("calculate midPrice") {
+    var midPrice = BigDecimal("0.000000280")
+    var b = botNoah1
+    var o = orderNoah1
+    assert(midPrice < o.price)
+    var newMid = Strategy.calcMid(o.price, o.quantity, b.quantityPower, b.gridSpace, b.counterScale, Side.sell, midPrice, b.strategy)
+    val newBuySeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.buy, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    val r = MyUtils.sqrt(ONE + b.gridSpace(mc) / CENT).pow(b.quantityPower)
+    assert(newMid._1 < midPrice && newMid._1 > midPrice(mc) / r.pow(b.quantityPower))
+    assert(newBuySeed.head.params.price == (newMid._1 / r.pow(1)).ten)
+    assert(newBuySeed(1).params.price == (newMid._1 / r.pow(2)).ten)
 
-
-//  test("reconstruct orders from any buy order far from spread") {
-//    var unitPrice0 = BigDecimal("1")
-//    val qty0  = BigDecimal("800")
-//    val midPrice = BigDecimal("1.02")
-//    val rate = BigDecimal("1.01")
-//    val buyGridLevels = 3
-//    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice, Strategies.ppt)
-//    val res2 = Strategy.seed(res1._2, res1._1, amtPower1, 2, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
-//
-//    assert(res1._1 === BigDecimal("1.0201"))
-//    assert(res1._2 === BigDecimal("792.078"))
-//
-////    assert(res2.head.params.price === BigDecimal("1.01"))
-////    assert(res2.head.params.quantity === BigDecimal("796.1"))
-////    assert(res2(1).params.price === BigDecimal("1"))
-////    assert(res2(1).params.quantity === BigDecimal("800"))
-////    assert(res2(2).params.price === BigDecimal("0.9900990099009901"))
-////    assert(res2(2).params.quantity === BigDecimal("804.0"))
-//
-//    assert(res2(1).params.price === unitPrice0)
-//    assert(res2(1).params.quantity === qty0)
-//  }
-//
-//  test("reconstruct order zero from any buy order close to spread") {
-//    var unitPrice0 = BigDecimal("1")
-//    val qty0  = BigDecimal("800")
-//    val midPrice = BigDecimal("1.005")
-//    val rate = BigDecimal("1.01")
-//    val buyGridLevels = 2
-//
-//    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.buy, midPrice, Strategies.ppt)
-//    val res2 = Strategy.seed(res1._2, res1._1, amtPower1, XRPscale, order.symbol, buyGridLevels, BigDecimal(1), Side.buy,  isPulledFromOtherSide = false, Strategies.ppt)
-//
-//    assert(res2.head.params.price === unitPrice0)
-//    assert(res2.head.params.quantity === qty0)
-//
-////    assert(res1._1 === BigDecimal("1.01"))
-////    assert(res1._2 === BigDecimal("796.029"))
-////    assert(res2.head.params.price === BigDecimal("1"))
-////    assert(res2.head.params.quantity === BigDecimal("800"))
-////    assert(res2(1).params.price === BigDecimal(".9900990099009901"))
-////    assert(res2(1).params.quantity === BigDecimal("804"))
-//
-//
-//  }
-//
-//  test("reconstruct order zero from sell order far from spread") {
-//    var unitPrice0 = BigDecimal("1")
-//    val qty0  = BigDecimal("800")
-//    val midPrice = BigDecimal("0.98")
-//    val rate = BigDecimal("1.01")
-//    val selGridLevels = 3
-//    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.sell, midPrice, Strategies.ppt)
-//    val res2 = Strategy.seed(res1._2, res1._1, amtPower2, XRPscale, order.symbol, selGridLevels, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
-//    assert(res1._1 === BigDecimal("0.9705901479276445"))
-//    assert(res1._2 === BigDecimal("824.241"))
-//
-////    assert(res2.head.params.price === BigDecimal("0.9802960494069209"))
-////    assert(res2.head.params.quantity === BigDecimal("816.080"))
-////    assert(res2(1).params.price === BigDecimal("0.9900990099009902"))
-////    assert(res2(1).params.quantity === BigDecimal("808.000"))
-////    assert(res2(2).params.price === BigDecimal("1"))
-////    assert(res2(2).params.quantity === BigDecimal("800.000"))
-//
-//    assert(res2(2).params.price === unitPrice0)
-//    assert(res2(2).params.quantity === qty0)
-//  }
-//
-//  test("reconstruct order zero from sell order close to spread") {
-//    var unitPrice0 = BigDecimal("1")
-//    val qty0  = BigDecimal("800")
-//    val midPrice = BigDecimal("0.991")
-//    val rate = BigDecimal("1.01")
-//    val selGridLevels = 3
-//    val res1 = Strategy.calcMid(unitPrice0, qty0, amtPower1, rate, XRPscale, Side.sell, midPrice, Strategies.ppt)
-//    val res2 = Strategy.seed(res1._2, res1._1, amtPower2, XRPscale, order.symbol, selGridLevels, BigDecimal(1), Side.sell,  isPulledFromOtherSide = false, Strategies.ppt)
-//    assert(res1._1 === BigDecimal("0.9900990099009901"))
-//    assert(res1._2 === BigDecimal("808.0"))
-//
-//
-//    assert(res2.head.params.price === unitPrice0)
-//    assert(res2.head.params.quantity === qty0)
-////    assert(res2.head.params.price === BigDecimal("1"))
-////    assert(res2.head.params.quantity === BigDecimal("800"))
-////    assert(res2(1).params.price === BigDecimal("1.010000000000000"))
-////    assert(res2(1).params.quantity === BigDecimal("792.079"))
-////    assert(res2(2).params.price === BigDecimal("1.020100000000000"))
-////    assert(res2(2).params.quantity === BigDecimal("784.236"))
-//  }
-
-  test("seed2 test"){
-    val res1 = Strategy.seed2(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 5, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.ppt)
-    val res2 = Strategy.seed(order.quantity, order.price, amtPower1, NOAHScale, order.symbol, 3, BigDecimal(1), Side.sell,  isPulledFromOtherSide = true, Strategies.ppt)
-    println(res1)
-    println(res2)
-
-    
-//    // This is the only valid order
-//    0 + 1 = 1
-//    1 + 3 = 4
-//    4 + 5 = 9
-//    9 + 7 = 16
-//    16 + 9 = 25 // done
+    midPrice = BigDecimal("0.000002280")
+    assert(midPrice > o.price)
+    newMid = Strategy.calcMid(o.price, o.quantity, b.quantityPower, b.gridSpace, b.counterScale, Side.buy, midPrice, b.strategy)
+    val newSellSeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.sell, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    assert(newMid._1 > midPrice && newMid._1 < midPrice * r.pow(b.quantityPower))
+    assert(newSellSeed.head.params.price == (newMid._1 * r.pow(1)).ten)
+    assert(newSellSeed(1).params.price == (newMid._1 * r.pow(2)).ten)
 
   }
-
 
 
 }
