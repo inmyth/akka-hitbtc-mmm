@@ -1,4 +1,8 @@
-1.6
+1.7.0
+- added transient list in OrderbookActor to hold pending orders (counter and seed)
+- added wiring for grow and trim
+
+1.6.0
 - added midPrice calculation to estimate new starting point for seed when the bot restarts
 - fixed Strategies (orders placed sequentially from the start)
 - fixed emails

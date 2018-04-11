@@ -20,7 +20,7 @@
                 "sellOrderQuantity": "1",
                 "quantityPower" : 1,
                 "counterScale" : 0,
-                "baseScale" : 10,
+                "baseScale" : 9,
                 "isStrictLevels" : true,
                 "isNoQtyCutoff" : true,
                 "strategy" : "ppt"

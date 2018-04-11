@@ -134,8 +134,9 @@ class MainActor(configPath : String) extends Actor with MyLogging {
       state foreach(_ ! ErrorOrderTooSmall(er, id))
 
     case ErrorCancelGhost(er, id) =>
-      self ! HandleRPCError(er, id)
-      state foreach(_ ! ErrorCancelGhost(er, id))
+      // looks like this RPC always returns error if websocket subscribe is in use
+//      self ! HandleRPCError(er, id)
+//      state foreach(_ ! ErrorCancelGhost(er, id))
 
     case ErrorSymbol(er, id) => self ! HandleRPCError(er, id, Some(-1))
 

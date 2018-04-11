@@ -73,39 +73,4 @@ class MyUtilsTest extends FunSuite {
     assert(c === BigDecimal(9))
   }
 
-  test ("while loop ") {
-    var levels = 0
-    var a = BigDecimal("1")
-    val m = BigDecimal("1.01")
-    val b = BigDecimal("1.03")
-
-    while (a < b) {
-      levels = levels + 1
-      a = a * m
-    }
-    assert(levels === 3)
-  }
-
-
-
-  test("test foldLeft"){
-    def abc(x : Int, y : Int) : (Int, Int) = {
-      (x + 2, y +2)
-    }
-
-    val a = List(1,1,1)
-    val b = a.foldLeft(1,1)((p,q) =>
-    {
-      println(p)
-      abc(p._1, p._2)
-
-    }
-
-    )
-    println("--")
-    println(b)
-
-  }
-
-
 }

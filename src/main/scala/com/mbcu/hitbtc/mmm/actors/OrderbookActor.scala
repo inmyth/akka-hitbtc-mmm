@@ -1,6 +1,7 @@
 package com.mbcu.hitbtc.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Props}
+import com.mbcu.hitbtc.mmm.actors.OrderbookActor.Age.Age
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor._
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendCancelOrders, SendNewOrders, UnreqTick}
@@ -14,7 +15,6 @@ import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
 
 import scala.collection.concurrent.TrieMap
 
-
 object OrderbookActor {
   def props(bot : Bot): Props = Props(new OrderbookActor(bot))
 
@@ -26,11 +26,17 @@ object OrderbookActor {
 
   case class CancelInvalidOrder(clientOrderId : String)
 
+  object Age extends Enumeration {
+    type Age = Value
+    val per, tra, all = Value
+  }
 
 }
 class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLogging{
   var sels : TrieMap[String, Order] = TrieMap.empty[String, Order]
   var buys : TrieMap[String, Order] = TrieMap.empty[String, Order]
+  var selTrans : TrieMap[String, Order] = TrieMap.empty[String, Order]
+  var buyTrans : TrieMap[String, Order] = TrieMap.empty[String, Order]
   var sortedSels: scala.collection.immutable.Seq[Order] = scala.collection.immutable.Seq.empty[Order]
   var sortedBuys : scala.collection.immutable.Seq[Order] = scala.collection.immutable.Seq.empty[Order]
   var state : Option[ActorRef] = None
@@ -40,7 +46,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case "start" => state = Some(sender())
 
     case InitOrder(orders) =>
-      orders foreach add
+      orders.foreach(o => add(o, Age.per))
       sort(Side.all)
       requestingTicker = true
       state foreach(_ ! ReqTick(bot.pair))
@@ -60,68 +66,90 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case CancelInvalidOrder(id) =>
       MyUtils.sideFromId(id) match {
         case Some(side) =>
-          remove(side, id)
+          remove(side, id, Age.per)
+          remove(side, id, Age.tra)
           sort(side)
         case _ => warn(s"OrderbookActor#CancelInvalidOrder _ $id")
       }
 
     case OrderNew(order) =>
-      add(order)
+      newOrder(order)
       sort(order.side)
-      sendCancelOrders(trim(order.side))
+      val trans = if (order.side == Side.buy) buyTrans else selTrans
+      if (trans.isEmpty){
+        sendCancelOrders(trim(order.side))
+      }
 
     case OrderFilled(order) =>
-      remove(order)
-      sort(order.side)
-      sendOrders(counter(order), "counter")
-      sendOrders(grow(order.side), "balancer")
+      removeTotal(order)
+
+      val counters = counter(order)
+      counters.foreach(o => add(newOrderToOrder(o), Age.tra))
+      sort(Side.all)
+
+      val growth = grow(order.side)
+      growth.foreach(o => add(newOrderToOrder(o), Age.tra))
+
+      sendOrders(counters, "counter")
+      sendOrders(growth, "balancer")
 
     case OrderPartiallyFilled(order) =>
-      add(order)
+      newOrder(order)
       sort(order.side)
 
     case OrderCancelled(order) =>
-      remove(order)
+      removeTotal(order)
       sort(order.side)
+  }
+
+  def newOrder(order : Order) : Unit = {
+    add(order, Age.per)
+    remove(order, Age.tra)
+  }
+
+  def removeTotal(order : Order) : Unit = {
+    remove(order, Age.tra)
+    remove(order, Age.per)
   }
 
   def sendOrders(no : Seq[NewOrder], as : String): Unit =state foreach (_ ! SendNewOrders(no, as))
 
   def sendCancelOrders(oc : Seq[Order]) : Unit = state foreach(_ ! SendCancelOrders(oc.map(o => CancelOrder(o.clientOrderId))))
 
-
-  def add(order : Order) : Unit = {
-    order.side match {
-        case Side.buy => buys += (order.clientOrderId -> order)
-        case Side.sell => sels += (order.clientOrderId -> order)
-        case _ => warn(s"OrderbookActor#add unrecognized side ${order.side}")
+  def add(order : Order, age :Age) : Unit = {
+    var l = (age, order.side) match {
+      case (Age.per, Side.buy) => buys
+      case (Age.per, Side.sell) => sels
+      case (Age.tra, Side.buy) => buyTrans
+      case (Age.tra, Side.sell) => selTrans
+      case _ => TrieMap.empty[String, Order]
     }
+    l += (order.clientOrderId -> order)
   }
 
-  def remove(side : Side, id : String) : Unit = {
-    side match {
-      case Side.buy => buys.remove(id)
-      case Side.sell => sels.remove(id)
-      case _ => warn(s"OrderbookActor#CancelInvalidOrder $id")
-    }
-  }
+  def newOrderToOrder(order : NewOrder) : Order = Order(order.id, order.id, order.params.symbol, order.params.side, "fake", "fake", "fake", order.params.quantity, order.params.price, BigDecimal(0), "fake", "fake", None, None, "fake", None, None, None, None, None)
 
-  def remove(order : Order) : Unit = {
-    order.side match {
-      case Side.buy => buys -=  order.clientOrderId
-      case Side.sell => sels -= order.clientOrderId
-      case _ => warn(s"OrderbookActor#remove unrecognized side ${order.side}")
+  def remove(order : Order, age : Age) : Unit = remove(order.side, order.clientOrderId, age)
+
+  def remove(side : Side, clientOrderId : String, age : Age ) : Unit = {
+    var l = (age, side) match {
+      case (Age.per, Side.buy) => buys
+      case (Age.per, Side.sell) => sels
+      case (Age.tra, Side.buy) => buyTrans
+      case (Age.tra, Side.sell) => selTrans
+      case _ => TrieMap.empty[String, Order]
     }
+    l -= clientOrderId
   }
 
 
   def sort(side : Side) : Unit = {
     side match {
-      case Side.buy => sortedBuys = sortBuys(buys)
-      case Side.sell => sortedSels = sortSels(sels)
+      case Side.buy => sortedBuys = sortBuys(buys, buyTrans)
+      case Side.sell => sortedSels = sortSels(sels, selTrans)
       case _ =>
-        sortedBuys = sortBuys(buys)
-        sortedSels = sortSels(sels)
+        sortedBuys = sortBuys(buys, buyTrans)
+        sortedSels = sortSels(sels, selTrans)
     }
 
   }
@@ -136,35 +164,24 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   }
 
   def grow(side : Side) : Seq[NewOrder] = {
-    var newOrders : Seq[NewOrder] = Seq.empty
-
     def matcher(side : Side) : Seq[NewOrder] = {
-      val seeds = seed(side)
-      seeds.foreach(no => saveSeed(side, no))
-      seeds
+      val preSeed = getRuntimeSeedStart(side)
+      Strategy.seed(preSeed._2, preSeed._3, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
     }
     side match {
-      case Side.buy  => newOrders ++= matcher(Side.buy)
-      case Side.sell => newOrders ++= matcher(Side.sell)
-      case _ =>
-        newOrders ++= matcher(Side.buy)
-        newOrders ++= matcher(Side.sell)
-    }
-    newOrders
-  }
-
-  def seed(side : Side) : Seq[NewOrder] = {
-    val preSeed = getPreSeed(side)
-    Strategy.seed(preSeed._2, preSeed._3, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
-  }
-
-  def saveSeed(side : Side, o : NewOrder) : Unit = {
-    side match {
-      case Side.buy => buys.put(o.params.clientOrderId, Order.tempNewOrder(o))
-      case Side.sell => sels.put(o.params.clientOrderId, Order.tempNewOrder(o))
-      case _ => println("OrderbookActor#seed _")
+      case Side.buy  => matcher(Side.buy)
+      case Side.sell => matcher(Side.sell)
+      case _ =>  Seq.empty[NewOrder] // unsupported operation at runtime
     }
   }
+
+//  def saveSeed(side : Side, o : NewOrder) : Unit = {
+//    side match {
+//      case Side.buy => buys.put(o.params.clientOrderId, Order.tempNewOrder(o))
+//      case Side.sell => sels.put(o.params.clientOrderId, Order.tempNewOrder(o))
+//      case _ => println("OrderbookActor#seed _")
+//    }
+//  }
 
   def initialSeed(midPrice : BigDecimal): Seq[NewOrder] = {
     var res : Seq[NewOrder] = Seq.empty[NewOrder]
@@ -206,7 +223,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     res
   }
 
-  def getPreSeed(side : Side) : (Int, BigDecimal, BigDecimal, Boolean) = {
+  def getRuntimeSeedStart(side : Side) : (Int, BigDecimal, BigDecimal, Boolean) = {
     var qty0 : BigDecimal = BigDecimal("0")
     var unitPrice0 : BigDecimal = BigDecimal("0")
     var isPulledFromOtherSide : Boolean = false
@@ -243,17 +260,13 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     (levels, qty0, unitPrice0, isPulledFromOtherSide)
   }
 
-   def sortBuys(buys : TrieMap[String, Order]) : scala.collection.immutable.Seq[Order] = {
-     collection.immutable.Seq(buys.toSeq.map(_._2).sortWith(_.price > _.price) : _*)
-  }
+   def sortBuys(buys : TrieMap[String, Order], buyTrans : TrieMap[String, Order]) : scala.collection.immutable.Seq[Order] =
+     collection.immutable.Seq((buys ++ buyTrans).toSeq.map(_._2).sortWith(_.price > _.price) : _*)
 
-   def sortSels(sels : TrieMap[String, Order]): scala.collection.immutable.Seq[Order] = {
-     collection.immutable.Seq(sels.toSeq.map(_._2).sortWith(_.price < _.price) : _*)
-   }
 
-  def addBuy(order : Order) : Unit = buys put (order.id, order)
+   def sortSels(sels : TrieMap[String, Order], selTrans : TrieMap[String, Order]): scala.collection.immutable.Seq[Order] =
+     collection.immutable.Seq((sels ++ selTrans).toSeq.map(_._2).sortWith(_.price < _.price) : _*)
 
-  def addSel(order : Order) : Unit = sels put (order.id, order)
 
   override def getTopSel: Order = sortedSels.head
 
