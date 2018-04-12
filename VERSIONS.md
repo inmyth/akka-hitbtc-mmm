@@ -1,3 +1,6 @@
+1.7.1
+- added StrategyTest tests for midPrice recalc (new midprice's seed must reach the starting point with the same number of steps)
+
 1.7.0
 - added transient list in OrderbookActor to hold pending orders (counter and seed)
 - added wiring for grow and trim

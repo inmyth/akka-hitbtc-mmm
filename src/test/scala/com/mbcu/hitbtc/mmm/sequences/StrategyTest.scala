@@ -128,24 +128,41 @@ class StrategyTest extends FunSuite {
 //  }
 
   test("calculate midPrice") {
-    var midPrice = BigDecimal("0.000000280")
+    var midPrice = BigDecimal("0.000001200")
     var b = botNoah1
     var o = orderNoah1
     assert(midPrice < o.price)
     var newMid = Strategy.calcMid(o.price, o.quantity, b.quantityPower, b.gridSpace, b.counterScale, Side.sell, midPrice, b.strategy)
-    val newBuySeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.buy, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
-    val r = MyUtils.sqrt(ONE + b.gridSpace(mc) / CENT).pow(b.quantityPower)
+    var newBuySeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.buy, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    var r = MyUtils.sqrt(ONE + b.gridSpace(mc) / CENT).pow(b.quantityPower)
     assert(newMid._1 < midPrice && newMid._1 > midPrice(mc) / r.pow(b.quantityPower))
     assert(newBuySeed.head.params.price == (newMid._1 / r.pow(1)).ten)
     assert(newBuySeed(1).params.price == (newMid._1 / r.pow(2)).ten)
 
-    midPrice = BigDecimal("0.000002280")
+    var expectedLevels = 13
+    var newSellSeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, expectedLevels, b.gridSpace, Side.sell, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    assert(newSellSeed.head.params.price == (newMid._1 * r.pow(1)).ten)
+    assert(newSellSeed(1).params.price == (newMid._1 * r.pow(2)).ten)
+    // this proves that the starting order can be reproduced with the same levels
+    assert(newSellSeed.last.params.price == o.price) //5000
+    assert(newSellSeed.last.params.quantity == o.quantity) // .000001280
+    assert(newMid._3 == expectedLevels)
+
+
+    midPrice = BigDecimal("0.000001300")
     assert(midPrice > o.price)
     newMid = Strategy.calcMid(o.price, o.quantity, b.quantityPower, b.gridSpace, b.counterScale, Side.buy, midPrice, b.strategy)
-    val newSellSeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.buyGridLevels, b.gridSpace, Side.sell, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    newSellSeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, b.sellGridLevels, b.gridSpace, Side.sell, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
     assert(newMid._1 > midPrice && newMid._1 < midPrice * r.pow(b.quantityPower))
     assert(newSellSeed.head.params.price == (newMid._1 * r.pow(1)).ten)
     assert(newSellSeed(1).params.price == (newMid._1 * r.pow(2)).ten)
+
+    expectedLevels = 4
+    newBuySeed = Strategy.seed(newMid._2, newMid._1, b.quantityPower, b.counterScale, b.baseScale, b.pair, expectedLevels, b.gridSpace, Side.buy, false, Strategies.ppt, true, b.maxPrice, b.minPrice)
+    r = MyUtils.sqrt(ONE + b.gridSpace(mc) / CENT).pow(b.quantityPower)
+    assert(newBuySeed.head.params.price == (newMid._1 / r.pow(1)).ten)
+    assert(newBuySeed(1).params.price == (newMid._1 / r.pow(2)).ten)
+    assert(newMid._3 == expectedLevels)
 
   }
 
