@@ -6,7 +6,7 @@ import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.StateActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.{CancelOrder, NewOrder}
-import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
+import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError, Side}
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
 
@@ -75,6 +75,7 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
       }
 
 
+
     case SendNewOrders(newOrders, as) => main foreach (_ ! SendNewOrders(newOrders, as))
 
     case SendCancelOrders(cancelOrders) => main foreach (_ ! SendCancelOrders(cancelOrders))
@@ -89,19 +90,20 @@ class StateActor (val config : Config) extends Actor with MyLogging  {
 
     case OrderExpired(order) =>  context.actorSelection(s"/user/main/state/${order.symbol}") ! OrderCancelled(order)
 
-    case ErrorNotEnoughFund(_, id) => cancelInvalidOrderFromId(id)
+    case ErrorNotEnoughFund(er, id) => cancelInvalidOrderFromId(er, id)
 
-    case ErrorOrderTooSmall(_, id) => cancelInvalidOrderFromId(id)
+    case ErrorOrderTooSmall(er, id) => cancelInvalidOrderFromId(er, id)
 
-    case ErrorCancelGhost(_, id) => cancelInvalidOrderFromId(id)
+    case ErrorCancelGhost(er, id) => cancelInvalidOrderFromId(er, id)
 
+    case ReturnInvalidOrder(er, order) => main foreach(_ ! ReturnInvalidOrder(er, order))
   }
 
-  def cancelInvalidOrderFromId(idOpt : Option[String]) : Unit = {
+  def cancelInvalidOrderFromId(er : RPCError, idOpt : Option[String]) : Unit = {
     idOpt match {
       case Some(id) =>
         MyUtils.symbolFromId(id) match {
-          case Some(symbol) => context.actorSelection(s"/user/main/state/$symbol") ! CancelInvalidOrder(id)
+          case Some(symbol) => context.actorSelection(s"/user/main/state/$symbol") ! CancelInvalidOrder(er, id)
           case _ => warn(s"StateActor#cancelFromID no symbol for id : $id")
         }
       case _ => warn(s"StateActor#cancelFromID no id : $idOpt")

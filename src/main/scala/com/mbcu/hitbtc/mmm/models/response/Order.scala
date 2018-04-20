@@ -2,7 +2,7 @@ package com.mbcu.hitbtc.mmm.models.response
 
 import akka.http.scaladsl.model.DateTime
 import com.mbcu.hitbtc.mmm.models.request.NewOrder
-import com.mbcu.hitbtc.mmm.models.response.Side.Side
+import com.mbcu.hitbtc.mmm.models.response.Side.{Side, values}
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Value
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
@@ -13,7 +13,23 @@ object Side extends Enumeration {
 
   implicit val sideRead = Reads.enumNameReads(Side)
   implicit val sideWrite = Writes.enumNameWrites
+
+  def reverse(a : Side) : Side = {
+    if (a == Side.buy) sell else buy
+  }
+
   def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
+}
+
+object PingPong extends Enumeration {
+  type PingPong = Value
+  val ping, pong = Value
+
+  def reverse (a : PingPong) : PingPong = {
+    if (a == ping) pong else ping
+  }
+
+  def withNameOpt(s: String): Option[PingPong] = values.find(_.toString == s)
 }
 
 object Order {

@@ -3,8 +3,9 @@ package com.mbcu.hitbtc.mmm.sequences
 import java.math.MathContext
 
 import com.mbcu.hitbtc.mmm.models.request.{NewOrder, NewOrderParam}
-import com.mbcu.hitbtc.mmm.models.response.Side
+import com.mbcu.hitbtc.mmm.models.response.PingPong.PingPong
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
+import com.mbcu.hitbtc.mmm.models.response.{PingPong, Side}
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Movement.Movement
 import com.mbcu.hitbtc.mmm.sequences.Strategy.Strategies.Strategies
 import com.mbcu.hitbtc.mmm.utils.MyUtils
@@ -34,7 +35,8 @@ object Strategy {
 
   def seed (qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int,
             ctrScale : Int, basScale : Int, symbol : String, levels : Int, gridSpace : BigDecimal,
-            side: Side, isPulledFromOtherSide : Boolean, strategy : Strategies, isNoQtyCutoff : Boolean,
+            side: Side, act : PingPong,
+            isPulledFromOtherSide : Boolean, strategy : Strategies, isNoQtyCutoff : Boolean,
             maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None) : Seq[NewOrder] = {
 
     val range = strategy match {
@@ -57,7 +59,7 @@ object Strategy {
               .foldLeft(unitPrice0, qty0)((z, i) => step(z._1, z._2, gridSpace, ctrScale, movement))
 
           case _ => (ZERO, ZERO)
-        }
+          }
         }
       )
       .filter(_._1 > 0)
@@ -72,18 +74,19 @@ object Strategy {
         case None => _._1 < INFINITY
       })
       .map(p1q1 => {
-        val newOrderParam = NewOrderParam(MyUtils.clientOrderId(symbol, side), symbol, side, p1q1._1.setScale(basScale, RoundingMode.HALF_EVEN), p1q1._2)
+        val newOrderParam = NewOrderParam(MyUtils.clientOrderId(symbol, side, act), symbol, side, p1q1._1.setScale(basScale, RoundingMode.HALF_EVEN), p1q1._2)
         NewOrder(newOrderParam.clientOrderId, newOrderParam)
       })
   }
 
 
   def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int, ctrScale : Int, basScale : Int, symbol : String, gridSpace : BigDecimal, side : Side,
-              strategy : Strategies, isNoQtyCutoff : Boolean,
+              oldAct : PingPong, strategy : Strategies, isNoQtyCutoff : Boolean,
               maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None)
   : Seq[NewOrder] = {
-    val newSide = if (side == Side.buy) Side.sell else Side.buy
-    seed(qty0, unitPrice0, amtPwr, ctrScale, basScale, symbol, 1, gridSpace, newSide, isPulledFromOtherSide = false, strategy, isNoQtyCutoff, maxPrice, minPrice)
+    val newSide = Side.reverse(side)
+    val newAct  = PingPong.reverse(oldAct)
+    seed(qty0, unitPrice0, amtPwr, ctrScale, basScale, symbol, 1, gridSpace, newSide, newAct, isPulledFromOtherSide = false, strategy, isNoQtyCutoff, maxPrice, minPrice)
   }
 
   def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, ctrScale : Int, movement: Movement): (BigDecimal, BigDecimal) ={

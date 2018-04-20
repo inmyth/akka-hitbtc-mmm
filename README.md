@@ -1,5 +1,11 @@
 # HitBtc Market Maker
 
+Market making bot with ping-pong based strategy.
+
+Whenever the bot starts, it will seed the orderbook using ticker's last offer as starting price.
+
+If there are existing orders in the account, these orders will be canceled and recreated as ping orders.
+The price will follow the recalculated grids but the quantity will continue from the last order left in the orderbook.
 
 To package
 ```
@@ -98,7 +104,7 @@ USDT = 7
 
 **isStrictLevels (boolean)**
 
-If true then number of orders is kept according to buyGridLevels pr sellGridLevels
+If true then number of orders is kept according to buyGridLevels pr sellGridLevels by removing ping (seed / balancer) orders. WARNING : this may cause holes in orderbook.
 
 **isNoQtyCutoff (boolean)**
 

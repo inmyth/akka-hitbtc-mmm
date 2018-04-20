@@ -1,6 +1,6 @@
 name := "akka-hitbtc-mmm"
 
-version := "1.7.0"
+version := "1.7.2"
 
 scalaVersion := "2.12.4"
 

@@ -1,22 +1,21 @@
 package com.mbcu.hitbtc.mmm.actors
 
-import akka.actor.{Actor, ActorRef, Cancellable, Props, Terminated}
-
-import scala.concurrent.duration._
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.dispatch.ExecutionContexts._
+import com.mbcu.hitbtc.mmm.actors.OrderbookActor.ReturnInvalidOrder
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
 import com.mbcu.hitbtc.mmm.actors.SesActor.{CacheMessages, MailSent, MailTimer}
 import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendCancelOrders, SendNewOrders, UnreqTick}
 import com.mbcu.hitbtc.mmm.actors.WsActor._
 import com.mbcu.hitbtc.mmm.models.internal.Config
 import com.mbcu.hitbtc.mmm.models.request.SubscribeMarket.Market
-import com.mbcu.hitbtc.mmm.models.request.{Login, NewOrder, SubscribeMarket, SubscribeReports}
+import com.mbcu.hitbtc.mmm.models.request.{Login, SubscribeMarket, SubscribeReports}
 import com.mbcu.hitbtc.mmm.models.response.{Order, RPCError}
-import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyLoggingSingle}
-import com.sun.xml.internal.ws.api.Cancelable
+import com.mbcu.hitbtc.mmm.utils.MyLogging
 import play.api.libs.json.Json
 
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
@@ -28,7 +27,7 @@ object MainActor {
 
   case class Shutdown(code :Int)
 
-  case class HandleRPCError(er : RPCError, id : Option[String], code : Option[Int] = None)
+  case class HandleRPCError(er : RPCError, id : Option[String], code : Option[Int] = None, order : Option[Order] = None)
 
   case class HandleError(msg :String, code : Option[Int] = None)
 
@@ -125,18 +124,16 @@ class MainActor(configPath : String) extends Actor with MyLogging {
 
     case ErrorNonAffecting(er, id) => self ! HandleRPCError(er, id)
 
-    case ErrorNotEnoughFund(er, id) =>
-      self ! HandleRPCError(er, id)
-      state foreach(_ ! ErrorNotEnoughFund(er, id))
+    case ErrorNotEnoughFund(er, id) => state foreach(_ ! ErrorNotEnoughFund(er, id))
 
-    case ErrorOrderTooSmall(er, id) =>
-      self ! HandleRPCError(er, id)
-      state foreach(_ ! ErrorOrderTooSmall(er, id))
+    case ErrorOrderTooSmall(er, id) => state foreach(_ ! ErrorOrderTooSmall(er, id))
 
     case ErrorCancelGhost(er, id) =>
       // looks like this RPC always returns error if websocket subscribe is in use
 //      self ! HandleRPCError(er, id)
 //      state foreach(_ ! ErrorCancelGhost(er, id))
+
+    case ReturnInvalidOrder(er, order) => self ! HandleRPCError(er, Some(order.id), None, Some(order))
 
     case ErrorSymbol(er, id) => self ! HandleRPCError(er, id, Some(-1))
 
@@ -152,9 +149,16 @@ class MainActor(configPath : String) extends Actor with MyLogging {
         case _ => warn("MainActor#wsGotText : _")
       }
 
-    case HandleRPCError(er, id, code ) =>
-      val s = s"""${er.toString}
+    case HandleRPCError(er, id, code, order) =>
+      var s = s"""${er.toString}
          |id $id""".stripMargin
+      s = order match {
+        case Some(o) =>
+          s"""$s
+             |side:${o.side} price:${o.price} quantity:${o.quantity}
+           """.stripMargin
+        case _ => s
+      }
       handleError(s, code)
 
     case HandleError(msg, code) => handleError(msg, code)

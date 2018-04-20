@@ -38,9 +38,10 @@ case class NewOrder(id : String, params : NewOrderParam, method : String = "newO
 object NewOrder {
   implicit val jsonFormat: OFormat[NewOrder] = Json.format[NewOrder]
 
-  def from(id : String, newOrderParam: NewOrderParam) : NewOrder = {
+  def apply(id : String, newOrderParam: NewOrderParam) : NewOrder = {
     new NewOrder(id, newOrderParam)
   }
+
 }
 
 

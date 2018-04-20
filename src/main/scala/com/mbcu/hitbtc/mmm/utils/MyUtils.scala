@@ -5,7 +5,8 @@ import java.text.SimpleDateFormat
 import java.time.{LocalDateTime, ZoneId}
 import java.util.{Date, SimpleTimeZone, TimeZone}
 
-import com.mbcu.hitbtc.mmm.models.response.Side
+import com.mbcu.hitbtc.mmm.models.response.PingPong.PingPong
+import com.mbcu.hitbtc.mmm.models.response.{PingPong, Side}
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
 
 import scala.math.BigDecimal.RoundingMode
@@ -42,10 +43,10 @@ object MyUtils {
 //    pair + dateForId()
 //  }
 
-  def clientOrderId(pair : String, side : Side): String ={
+  def clientOrderId(pair : String, side : Side, p : PingPong): String ={
     val random = scala.util.Random.alphanumeric.take(15).mkString
-    val hash = sha256Hash(random + System.currentTimeMillis()).substring(0, 18)
-    s"$pair.$side.$hash"
+    val hash = sha256Hash(random + System.currentTimeMillis()).substring(0, 13)
+    s"$pair.$side.$p.$hash"
   }
 
   def symbolFromId(id :String) : Option[String] = {
@@ -57,6 +58,14 @@ object MyUtils {
     str match {
       case Some(s) => Side.withNameOpt(s)
       case _ => None
+    }
+  }
+
+  def pingpongFromId(id : String) : PingPong = {
+    val str = id.split("[.]").lift(2)
+    str match {
+      case Some(s) => PingPong.withName(s)
+      case _ => PingPong.ping
     }
   }
 

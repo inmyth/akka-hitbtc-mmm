@@ -1,3 +1,9 @@
+1.7.2
+- [x] initial seed will happen after some delay after cancel (otherwise there migght not be enough fund)
+- [x] change seed and counter to ping and pong
+- [x] isStrictLevels cancels ping but preserves pong
+- fixed bug OrderbookActor#initialSeed
+
 1.7.1
 - added StrategyTest tests for midPrice recalc (new midprice's seed must reach the starting point with the same number of steps)
 
@@ -112,7 +118,7 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] get tick after orders are initiated
 - [x] after tick, seed
 - [x] merge emails
-- [] test reconnect after server down
+- [x] test reconnect after server down
 - [] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
 
 

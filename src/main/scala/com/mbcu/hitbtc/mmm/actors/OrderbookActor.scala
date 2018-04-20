@@ -1,6 +1,9 @@
 package com.mbcu.hitbtc.mmm.actors
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{Actor, ActorRef, Props}
+import akka.dispatch.ExecutionContexts.global
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor.Age.Age
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor._
 import com.mbcu.hitbtc.mmm.actors.ParserActor._
@@ -8,12 +11,14 @@ import com.mbcu.hitbtc.mmm.actors.StateActor.{ReqTick, SendCancelOrders, SendNew
 import com.mbcu.hitbtc.mmm.models.internal.Bot
 import com.mbcu.hitbtc.mmm.models.request.{CancelOrder, NewOrder}
 import com.mbcu.hitbtc.mmm.models.response.Side.Side
-import com.mbcu.hitbtc.mmm.models.response.{Order, Side}
+import com.mbcu.hitbtc.mmm.models.response.{Order, PingPong, RPCError, Side}
 import com.mbcu.hitbtc.mmm.sequences.Strategy
 import com.mbcu.hitbtc.mmm.traits.OrderbookTrait
 import com.mbcu.hitbtc.mmm.utils.{MyLogging, MyUtils}
 
 import scala.collection.concurrent.TrieMap
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
 
 object OrderbookActor {
   def props(bot : Bot): Props = Props(new OrderbookActor(bot))
@@ -24,7 +29,11 @@ object OrderbookActor {
 
   case class Trim(side : Side)
 
-  case class CancelInvalidOrder(clientOrderId : String)
+  case class CancelInvalidOrder(er : RPCError, id : String)
+
+  case class NewInitOrders(orders : Seq[NewOrder])
+
+  case class ReturnInvalidOrder(er :RPCError, order : Order)
 
   object Age extends Enumeration {
     type Age = Value
@@ -33,6 +42,8 @@ object OrderbookActor {
 
 }
 class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLogging{
+  implicit val ec: ExecutionContextExecutor = global
+
   var sels : TrieMap[String, Order] = TrieMap.empty[String, Order]
   var buys : TrieMap[String, Order] = TrieMap.empty[String, Order]
   var selTrans : TrieMap[String, Order] = TrieMap.empty[String, Order]
@@ -53,19 +64,27 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
     case "log orderbooks" => info(dump())
 
+    case NewInitOrders(orders) =>
+      orders.foreach(o => add(newOrderToOrder(o), Age.tra))
+      sendOrders(orders, "seed")
+
     case Trim(side) =>  sendCancelOrders(trim(side))
 
     case GotTicker(ticker)  =>
       if (requestingTicker){
         requestingTicker = false
-        sendOrders(initialSeed(ticker.last), "seed")
+        context.system.scheduler.scheduleOnce(2 second, self, NewInitOrders(initialSeed(ticker.last)))
         sendCancelOrders(sortedSels ++ sortedBuys)
         state foreach(_ ! UnreqTick(bot.pair))
       }
 
-    case CancelInvalidOrder(id) =>
+    case CancelInvalidOrder(er, id) =>
       MyUtils.sideFromId(id) match {
         case Some(side) =>
+          retrieve(side, id, Age.tra) match {
+            case Some(o) => state foreach(_ ! ReturnInvalidOrder(er, o))
+            case _ => warn(s"OrderbookActor#CancelInvalidOrder#retrieveTrans not found _ $id")
+          }
           remove(side, id, Age.per)
           remove(side, id, Age.tra)
           sort(side)
@@ -76,7 +95,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       newOrder(order)
       sort(order.side)
       val trans = if (order.side == Side.buy) buyTrans else selTrans
-      if (trans.isEmpty){
+      if (trans.isEmpty && bot.isStrictLevels){
         sendCancelOrders(trim(order.side))
       }
 
@@ -116,6 +135,17 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
 
   def sendCancelOrders(oc : Seq[Order]) : Unit = state foreach(_ ! SendCancelOrders(oc.map(o => CancelOrder(o.clientOrderId))))
 
+  def retrieve(side : Side, id : String, age : Age) : Option[Order] = {
+    val l = (age,side) match {
+      case (Age.per, Side.buy) => buys
+      case (Age.per, Side.sell) => sels
+      case (Age.tra, Side.buy) => buyTrans
+      case (Age.tra, Side.sell) => selTrans
+      case _ => TrieMap.empty[String, Order]
+    }
+    l.get(id)
+  }
+
   def add(order : Order, age :Age) : Unit = {
     var l = (age, order.side) match {
       case (Age.per, Side.buy) => buys
@@ -151,22 +181,22 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
         sortedBuys = sortBuys(buys, buyTrans)
         sortedSels = sortSels(sels, selTrans)
     }
-
   }
 
   def counter(order : Order) : Seq[NewOrder] = Strategy.counter(order.quantity, order.price,
-    bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.gridSpace, order.side, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+    bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.gridSpace, order.side, MyUtils.pingpongFromId(order.id), bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
 
 
   def trim(side : Side) : Seq[Order] = {
     val (orders, limit) = if (side == Side.buy) (sortedBuys, bot.buyGridLevels) else (sortedSels, bot.sellGridLevels)
-    orders.slice(limit, orders.size)
+    // this may cause a hole.
+    orders.filter(o => o.id.contains(PingPong.ping.toString)).slice(limit, orders.size)
   }
 
   def grow(side : Side) : Seq[NewOrder] = {
     def matcher(side : Side) : Seq[NewOrder] = {
       val preSeed = getRuntimeSeedStart(side)
-      Strategy.seed(preSeed._2, preSeed._3, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, preSeed._1, bot.gridSpace, side, preSeed._4, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+      Strategy.seed(preSeed._2, preSeed._3, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, preSeed._1, bot.gridSpace, side, PingPong.ping, preSeed._4, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
     }
     side match {
       case Side.buy  => matcher(Side.buy)
@@ -174,14 +204,6 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       case _ =>  Seq.empty[NewOrder] // unsupported operation at runtime
     }
   }
-
-//  def saveSeed(side : Side, o : NewOrder) : Unit = {
-//    side match {
-//      case Side.buy => buys.put(o.params.clientOrderId, Order.tempNewOrder(o))
-//      case Side.sell => sels.put(o.params.clientOrderId, Order.tempNewOrder(o))
-//      case _ => println("OrderbookActor#seed _")
-//    }
-//  }
 
   def initialSeed(midPrice : BigDecimal): Seq[NewOrder] = {
     var res : Seq[NewOrder] = Seq.empty[NewOrder]
@@ -218,8 +240,8 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
         calcMidPrice = calcMid._1
     }
 
-    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.buyGridLevels, bot.gridSpace, Side.buy, false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
-    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.sellGridLevels, bot.gridSpace, Side.sell, false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.buyGridLevels, bot.gridSpace, Side.buy, PingPong.ping,false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+    res ++= Strategy.seed(selQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.sellGridLevels, bot.gridSpace, Side.sell, PingPong.ping,false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
     res
   }
 
@@ -260,13 +282,11 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     (levels, qty0, unitPrice0, isPulledFromOtherSide)
   }
 
-   def sortBuys(buys : TrieMap[String, Order], buyTrans : TrieMap[String, Order]) : scala.collection.immutable.Seq[Order] =
-     collection.immutable.Seq((buys ++ buyTrans).toSeq.map(_._2).sortWith(_.price > _.price) : _*)
+  def sortBuys(buys : TrieMap[String, Order], buyTrans : TrieMap[String, Order]) : scala.collection.immutable.Seq[Order] =
+   collection.immutable.Seq((buys ++ buyTrans).toSeq.map(_._2).sortWith(_.price > _.price) : _*)
 
-
-   def sortSels(sels : TrieMap[String, Order], selTrans : TrieMap[String, Order]): scala.collection.immutable.Seq[Order] =
-     collection.immutable.Seq((sels ++ selTrans).toSeq.map(_._2).sortWith(_.price < _.price) : _*)
-
+  def sortSels(sels : TrieMap[String, Order], selTrans : TrieMap[String, Order]): scala.collection.immutable.Seq[Order] =
+   collection.immutable.Seq((sels ++ selTrans).toSeq.map(_._2).sortWith(_.price < _.price) : _*)
 
   override def getTopSel: Order = sortedSels.head
 
@@ -295,6 +315,5 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     })
     builder.toString()
   }
-
 
 }
