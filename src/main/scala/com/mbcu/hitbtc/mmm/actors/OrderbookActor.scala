@@ -1,7 +1,5 @@
 package com.mbcu.hitbtc.mmm.actors
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{Actor, ActorRef, Props}
 import akka.dispatch.ExecutionContexts.global
 import com.mbcu.hitbtc.mmm.actors.OrderbookActor.Age.Age
@@ -73,8 +71,8 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case GotTicker(ticker)  =>
       if (requestingTicker){
         requestingTicker = false
-        context.system.scheduler.scheduleOnce(2 second, self, NewInitOrders(initialSeed(ticker.last)))
-        sendCancelOrders(sortedSels ++ sortedBuys)
+        context.system.scheduler.scheduleOnce(2 second, self, NewInitOrders(initialSeed(ticker.last, bot.isHardReset)))
+        if (bot.isHardReset) sendCancelOrders(sortedSels ++ sortedBuys)
         state foreach(_ ! UnreqTick(bot.pair))
       }
 
@@ -95,7 +93,11 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       newOrder(order)
       sort(order.side)
       val trans = if (order.side == Side.buy) buyTrans else selTrans
+      println("calla")
+
       if (trans.isEmpty && bot.isStrictLevels){
+        println("callb")
+
         sendCancelOrders(trim(order.side))
       }
 
@@ -205,43 +207,49 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     }
   }
 
-  def initialSeed(midPrice : BigDecimal): Seq[NewOrder] = {
+  def initialSeed(midPrice : BigDecimal, isHardReset : Boolean): Seq[NewOrder] = {
     var res : Seq[NewOrder] = Seq.empty[NewOrder]
-
     var buyQty = BigDecimal(0)
     var selQty = BigDecimal(0)
     var calcMidPrice = midPrice
+    var buyLevels = 0
+    var selLevels = 0
+
+    def set(up : BigDecimal, bq : BigDecimal, sq : BigDecimal, bl : Int, sl : Int) : Unit = {
+      buyQty = bq
+      selQty = sq
+      buyLevels = bl
+      selLevels = sl
+      calcMidPrice = up
+    }
 
     (sortedBuys.size, sortedSels.size) match {
-      case (a, s) if a == 0 && s == 0 =>
-        buyQty = bot.buyOrderQuantity
-        selQty = bot.sellOrderQuantity
-        calcMidPrice = midPrice
+      case (a, s) if a == 0 && s == 0 => set(midPrice, bot.buyOrderQuantity, bot.sellOrderQuantity, bot.buyGridLevels, bot.sellGridLevels)
 
       case (a, s) if a != 0 && s == 0 =>
         val anyBuy  = sortedBuys.head
         val calcMid = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.buy, midPrice, bot.strategy)
-        buyQty = calcMid._2
-        selQty = calcMid._2
-        calcMidPrice = calcMid._1
+        val bl = if (isHardReset) bot.buyGridLevels else calcMid._3 - 1
+        set(calcMid._1, calcMid._2, calcMid._2, bl, bot.sellGridLevels)
 
       case (a, s) if a == 0 && s != 0 =>
         val anySel  = sortedSels.head
         val calcMid = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
-        buyQty = calcMid._2
-        selQty = calcMid._2
-        calcMidPrice = calcMid._1
+        val sl = if (isHardReset) bot.sellGridLevels else calcMid._3 - 1
+        set(calcMid._1, calcMid._2, calcMid._2, bot.buyGridLevels, sl)
 
       case (a, s) if a != 0 && s != 0 =>
         val anySel  = sortedSels.head
-        val calcMid = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
-        buyQty = calcMid._2
-        selQty = calcMid._2
-        calcMidPrice = calcMid._1
+        val calcMidSel = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
+        val anyBuy  = sortedBuys.head
+        val calcMidBuy = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.buy, calcMidSel._1, bot.strategy)
+        val bl = if (isHardReset) bot.buyGridLevels else calcMidBuy._3 - 1
+        val sl = if (isHardReset) bot.sellGridLevels else calcMidSel._3 - 1
+        set(calcMidSel._1, calcMidBuy._2, calcMidSel._2, bl, sl)
     }
 
-    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.buyGridLevels, bot.gridSpace, Side.buy, PingPong.ping,false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
-    res ++= Strategy.seed(selQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, bot.sellGridLevels, bot.gridSpace, Side.sell, PingPong.ping,false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, buyLevels, bot.gridSpace, Side.buy, PingPong.ping,false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+    res ++= Strategy.seed(selQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, selLevels, bot.gridSpace, Side.sell, PingPong.ping,false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
     res
   }
 

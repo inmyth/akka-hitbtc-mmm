@@ -102,14 +102,19 @@ ETH = 8
 
 USDT = 7
 
+**isHardReset (boolean)**
+
+If true then when the bot starts it will remove all orders and seed new orders with recalculated middle price. This method will clear any holes (missing levels) but lose all ping/pong information from the old orders.
+
+If false then the bot will only fill the hole closest to market middle price. This will preserve the ping/pong info of each order but not fill all possible holes.
+
 **isStrictLevels (boolean)**
 
 If true then number of orders is kept according to buyGridLevels pr sellGridLevels by removing ping (seed / balancer) orders. WARNING : this may cause holes in orderbook.
 
 **isNoQtyCutoff (boolean)**
 
-If true then order's quantity will never become zero. Instead it will be replaced with the currencys' minimum amount.
-
+If true then order's quantity will never become zero. Instead it will be replaced with the currency's minimum amount.
 
 **(Optional) maxPrice and minPrice (String)**
 

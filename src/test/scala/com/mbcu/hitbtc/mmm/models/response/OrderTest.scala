@@ -1,6 +1,7 @@
 package com.mbcu.hitbtc.mmm.models.response
 
 import com.mbcu.hitbtc.mmm.models.request.Login
+import com.mbcu.hitbtc.mmm.utils.MyUtils
 import org.scalatest.FunSuite
 import play.api.libs.json.{JsArray, JsValue, Json}
 
@@ -146,5 +147,11 @@ class OrderTest extends FunSuite{
 
   }
 
+  test("enumeration") {
+    assert(PingPong.ping === PingPong.reverse(PingPong.pong))
+    assert(PingPong.pong === PingPong.reverse(PingPong.ping))
+    assert(PingPong.pong === MyUtils.pingpongFromId("NOAHBTC.sell.pong.077630196fed6"))
+    assert(PingPong.ping === MyUtils.pingpongFromId("NOAHBTC.sell.ping.f67a351bb1527"))
+  }
 
 }

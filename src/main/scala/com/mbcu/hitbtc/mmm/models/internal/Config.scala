@@ -6,13 +6,15 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 
-case class Credentials (pKey : String, nonce: String, signature : String)
+case class Credentials(pKey: String, nonce: String, signature: String)
+
 object Credentials {
   implicit val jsonFormat: OFormat[Credentials] = Json.format[Credentials]
 
 }
 
-case class Env(emails : Option[Seq[String]], sesKey : Option[String], sesSecret : Option[String], logSeconds : Int)
+case class Env(emails: Option[Seq[String]], sesKey: Option[String], sesSecret: Option[String], logSeconds: Int)
+
 object Env {
   implicit val jsonFormat: OFormat[Env] = Json.format[Env]
 
@@ -30,29 +32,31 @@ object Env {
 
     implicit val envReads: Reads[Env] = (
       (JsPath \ "emails").readNullable[Seq[String]] and
-      (JsPath \ "sesKey").readNullable[String] and
-      (JsPath \ "sesSecret").readNullable[String] and
-      (JsPath \ "logSeconds").read[Int]
+        (JsPath \ "sesKey").readNullable[String] and
+        (JsPath \ "sesSecret").readNullable[String] and
+        (JsPath \ "logSeconds").read[Int]
       ) (Env.apply _)
   }
+
 }
 
-case class Bot (
-                 pair              : String,
-                 gridSpace         : BigDecimal,
-                 buyGridLevels     : Int,
-                 sellGridLevels    : Int,
-                 buyOrderQuantity  : BigDecimal,
-                 sellOrderQuantity : BigDecimal,
-                 quantityPower     : Int,
-                 maxPrice          : Option[BigDecimal],
-                 minPrice          : Option[BigDecimal],
-                 counterScale      : Int,
-                 baseScale         : Int,
-                 isStrictLevels    : Boolean,
-                 isNoQtyCutoff     : Boolean,
-                 strategy          : Strategies
-  )
+case class Bot(
+                pair: String,
+                gridSpace: BigDecimal,
+                buyGridLevels: Int,
+                sellGridLevels: Int,
+                buyOrderQuantity: BigDecimal,
+                sellOrderQuantity: BigDecimal,
+                quantityPower: Int,
+                maxPrice: Option[BigDecimal],
+                minPrice: Option[BigDecimal],
+                counterScale: Int,
+                baseScale: Int,
+                isStrictLevels: Boolean,
+                isNoQtyCutoff: Boolean,
+                isHardReset: Boolean,
+                strategy: Strategies
+              )
 
 object Bot {
   implicit val jsonFormat: OFormat[Bot] = Json.format[Bot]
@@ -75,30 +79,34 @@ object Bot {
         "baseScale" -> bot.baseScale,
         "isStrictLevels" -> bot.isStrictLevels,
         "isNoQtyCutoff" -> bot.isNoQtyCutoff,
+        "isHardReset" -> bot.isHardReset,
         "strategy" -> bot.strategy
       )
     }
 
     implicit val botReads: Reads[Bot] = (
       (JsPath \ "pair").read[String] and
-      (JsPath \ "gridSpace").read[BigDecimal] and
-      (JsPath \ "buyGridLevels").read[Int] and
-      (JsPath \ "sellGridLevels").read[Int] and
-      (JsPath \ "buyOrderQuantity").read[BigDecimal] and
-      (JsPath \ "sellOrderQuantity").read[BigDecimal] and
-      (JsPath \ "quantityPower").read[Int] and
-      (JsPath \ "maxPrice").readNullable[BigDecimal] and
-      (JsPath \ "minPrice").readNullable[BigDecimal] and
-      (JsPath \ "counterScale").read[Int] and
-      (JsPath \ "baseScale").read[Int] and
-      (JsPath \ "isStrictLevels").read[Boolean] and
-      (JsPath \ "isNoQtyCutoff").read[Boolean] and
-      (JsPath \ "strategy").read[Strategies]
+        (JsPath \ "gridSpace").read[BigDecimal] and
+        (JsPath \ "buyGridLevels").read[Int] and
+        (JsPath \ "sellGridLevels").read[Int] and
+        (JsPath \ "buyOrderQuantity").read[BigDecimal] and
+        (JsPath \ "sellOrderQuantity").read[BigDecimal] and
+        (JsPath \ "quantityPower").read[Int] and
+        (JsPath \ "maxPrice").readNullable[BigDecimal] and
+        (JsPath \ "minPrice").readNullable[BigDecimal] and
+        (JsPath \ "counterScale").read[Int] and
+        (JsPath \ "baseScale").read[Int] and
+        (JsPath \ "isStrictLevels").read[Boolean] and
+        (JsPath \ "isNoQtyCutoff").read[Boolean] and
+        (JsPath \ "isHardReset").read[Boolean] and
+        (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)
   }
+
 }
 
-case class Config (credentials: Credentials, env : Env, bots : List[Bot])
+case class Config(credentials: Credentials, env: Env, bots: List[Bot])
+
 object Config {
   implicit val jsonFormat: OFormat[Config] = Json.format[Config]
 

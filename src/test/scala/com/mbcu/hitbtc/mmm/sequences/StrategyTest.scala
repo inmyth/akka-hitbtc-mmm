@@ -19,11 +19,11 @@ class StrategyTest extends FunSuite {
 
   val botNoah1 = new Bot("NOAHBTC", BigDecimal("0.5"), 5, 10, BigDecimal(5000), BigDecimal(5000),
     2, None, None, -3, 10,
-    true, true, Strategies.ppt)
+    true, true, true,  Strategies.ppt)
 
   val botNoah2 = new Bot("NOAHBTC", BigDecimal("0.0000001"), 5, 10, BigDecimal(5000), BigDecimal(5000),
     2, None, None, -3, 10,
-    true, true, Strategies.fullfixed)
+    true, true, true, Strategies.fullfixed)
 
   val orderNoah1 = Order(
     "testID",
