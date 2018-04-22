@@ -124,7 +124,8 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] after tick, seed
 - [x] merge emails
 - [x] test reconnect after server down
-- [] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
+- [x] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
+- [] need to have level matcher based on precision and tolerance
 
 
 
