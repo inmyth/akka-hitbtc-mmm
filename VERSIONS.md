@@ -1,7 +1,6 @@
 1.7.3
-- in progress
 - [x] add isHardReset mode
-- [] test trim with new logic (remove only pings)
+- [x] test trim with new logic (trim only removes non-pongs)
 
 1.7.2
 - [x] initial seed will happen after some delay after cancel (otherwise there migght not be enough fund)
@@ -126,6 +125,7 @@ excludeDependencies += "commons-logging" % "commons-logging"
 - [x] test reconnect after server down
 - [x] seed : if side is not empty, only refill the hole close to spread (optimal but cannot cover holes between orders)
 - [] need to have level matcher based on precision and tolerance
+- [] placement of trim at newOrder may have consequence
 
 
 

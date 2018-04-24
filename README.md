@@ -51,19 +51,6 @@ Emails to report to. Requires AWS SES to function.
 
 Interval in seconds of orderbook log
 
-### Bots
-                "pair": "XRPBTC",
-                "gridSpace": "0.5",
-                "buyGridLevels": 2,
-                "sellGridLevels": 2,
-                "buyOrderQuantity": "1",
-                "sellOrderQuantity": "1",
-                "quantityPower" : 1,
-                "counterScale" : 0,
-                "baseScale" : 10,
-                "isStrictLevels" : true,
-                "isNoQtyCutoff" : true,
-                "strategy" : "ppt"
 **pair (String)**
 
 Currency symbol
