@@ -1,3 +1,8 @@
+1.7.4
+- in progress
+- [] reseed with almostEqual method
+
+
 1.7.3
 - [x] add isHardReset mode
 - [x] test trim with new logic (trim only removes non-pongs)

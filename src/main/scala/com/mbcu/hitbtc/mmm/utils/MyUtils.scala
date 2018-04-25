@@ -81,5 +81,7 @@ object MyUtils {
     a.setScale(scale, RoundingMode.HALF_DOWN)
   }
 
+  def almostEqual(a : BigDecimal, b : BigDecimal, epsilon : BigDecimal) : Boolean = epsilon >= (a - b).abs
+
 
 }
