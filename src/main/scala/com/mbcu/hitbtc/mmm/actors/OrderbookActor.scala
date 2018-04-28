@@ -66,7 +66,11 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
       orders.foreach(o => add(newOrderToOrder(o), Age.tra))
       sendOrders(orders, "seed")
 
-    case Trim(side) =>  sendCancelOrders(trim(side))
+    case Trim(side) =>
+      val trans = if (side == Side.buy) buyTrans else selTrans
+      if (trans.isEmpty && bot.isStrictLevels){
+        sendCancelOrders(trim(side))
+      }
 
     case GotTicker(ticker)  =>
       if (requestingTicker){
@@ -92,14 +96,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
     case OrderNew(order) =>
       newOrder(order)
       sort(order.side)
-      val trans = if (order.side == Side.buy) buyTrans else selTrans
-      println("calla")
-
-      if (trans.isEmpty && bot.isStrictLevels){
-        println("callb")
-
-        sendCancelOrders(trim(order.side))
-      }
+      self ! Trim(order.side)
 
     case OrderFilled(order) =>
       removeTotal(order)
@@ -192,7 +189,7 @@ class OrderbookActor (var bot : Bot) extends OrderbookTrait with Actor with MyLo
   def trim(side : Side) : Seq[Order] = {
     val (orders, limit) = if (side == Side.buy) (sortedBuys, bot.buyGridLevels) else (sortedSels, bot.sellGridLevels)
     // this may cause a hole.
-    orders.filter(o => o.id.contains(PingPong.ping.toString)).slice(limit, orders.size)
+    orders.filter(o => !o.id.contains(PingPong.pong.toString)).slice(limit, orders.size)
   }
 
   def grow(side : Side) : Seq[NewOrder] = {

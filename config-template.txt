@@ -23,6 +23,7 @@
                 "baseScale" : 9,
                 "isStrictLevels" : true,
                 "isNoQtyCutoff" : true,
+                "isHardReset" : true,
                 "strategy" : "ppt"
             }
         ]
