@@ -1,7 +1,6 @@
 1.7.3
-- in progress
 - [x] add isHardReset mode
-- [] test trim with new logic (remove only pings)
+- [x] test trim with new logic (remove only pings)
 
 1.7.2
 - [x] initial seed will happen after some delay after cancel (otherwise there migght not be enough fund)
