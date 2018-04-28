@@ -19,6 +19,7 @@ class ConfigTest extends FunSuite{
                 |                "baseScale" : 9,
                 |                "isStrictLevels" : true,
                 |                "isNoQtyCutoff" : true,
+                |                "isHardReset" : true,
                 |                "strategy" : "ppt"
                 |                }""".stripMargin
     val obj = Json.parse(str).as[Bot]
@@ -39,6 +40,7 @@ class ConfigTest extends FunSuite{
                 |                "baseScale" : 9,
                 |                "isStrictLevels" : true,
                 |                "isNoQtyCutoff" : true,
+                |                "isHardReset" : true,
                 |                "strategy" : "ppt",
                 |                "minPrice" : "0.00000001",
                 |                "maxPrice" : "0.00000003"
