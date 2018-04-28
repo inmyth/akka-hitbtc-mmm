@@ -1,3 +1,6 @@
+1.7.4
+- updated Websocket lib
+
 1.7.3
 - [x] add isHardReset mode
 - [x] test trim with new logic (remove only pings)

@@ -1,6 +1,6 @@
 name := "akka-hitbtc-mmm"
 
-version := "1.7.3"
+version := "1.7.4"
 
 scalaVersion := "2.12.4"
 
@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-json"            % "2.6.8",
   "com.typesafe.play" %% "play"                 % "2.6.11",
   "javax.inject" % "javax.inject" % "1",
-  "com.neovisionaries" % "nv-websocket-client" % "2.3",
+  "com.neovisionaries" % "nv-websocket-client" % "2.4",
   "com.typesafe.play" %% "play-functional" % "2.6.8",
   "com.beachape.filemanagement" %% "schwatcher" % "0.3.2",
   "jp.co.bizreach" %% "aws-ses-scala" % "0.0.2",
