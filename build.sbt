@@ -1,22 +1,22 @@
 name := "akka-hitbtc-mmm"
 
-version := "1.7.4"
+version := "1.7.5"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.6"
 
-lazy val akkaHttpVersion = "10.1.0-RC2"
-lazy val akkaVersion = "2.5.11"
+lazy val akkaHttpVersion = "10.1.1"
+lazy val akkaVersion = "2.5.12"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
   "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
-  "com.typesafe.play" %% "play-json"            % "2.6.8",
-  "com.typesafe.play" %% "play"                 % "2.6.11",
+  "com.typesafe.play" %% "play-json"            % "2.6.9",
+  "com.typesafe.play" %% "play"                 % "2.6.13",
   "javax.inject" % "javax.inject" % "1",
   "com.neovisionaries" % "nv-websocket-client" % "2.4",
-  "com.typesafe.play" %% "play-functional" % "2.6.8",
+  "com.typesafe.play" %% "play-functional" % "2.6.9",
   "com.beachape.filemanagement" %% "schwatcher" % "0.3.2",
   "jp.co.bizreach" %% "aws-ses-scala" % "0.0.2",
   "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,

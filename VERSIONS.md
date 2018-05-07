@@ -1,3 +1,8 @@
+1.7.5
+- Added try catch on websocket.connect
+- Changed log level from ALL to FINE (remove SES related log)
+- Updated all dependencies
+
 1.7.4
 - updated Websocket lib
 

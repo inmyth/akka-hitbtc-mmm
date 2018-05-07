@@ -10,6 +10,8 @@ import com.mbcu.hitbtc.mmm.utils.MyLogging
 import com.neovisionaries.ws.client
 import play.api.libs.json.{JsValue, Json}
 
+import scala.util.{Failure, Success, Try}
+
 object WsActor {
   def props(url : String): Props = Props(new WsActor(url))
 
@@ -34,12 +36,15 @@ private var main: Option[ActorRef] = None
   override def receive: Receive = {
 
     case "start" =>
-        main = Some(sender)
-        val factory = new WebSocketFactory
-        val websocket = factory.createSocket(url)
-        websocket.addListener(ScalaWebSocketListener)
-        websocket.connect()
-        ws = Some(websocket)
+      main = Some(sender)
+      val factory = new WebSocketFactory
+      val websocket = factory.createSocket(url)
+      websocket.addListener(ScalaWebSocketListener)
+      ws = Some(websocket)
+      Try(websocket.connect()) match {
+        case Success(succ) =>
+        case Failure(fail) => main.foreach(_ ! WSError(s"WsActor#'start websocket.connect': $fail", Some(-1)))
+      }
 
     case SendJs(jsValue) =>
       val json : String = Json.stringify(jsValue)

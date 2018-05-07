@@ -28,7 +28,7 @@ object MyLoggingSingle {
 
   def init(logPath : String) : Unit = {
     log = Logger.getLogger("")
-    log.setLevel(Level.ALL)
+    log.setLevel(Level.FINE)
     val timeStamp = sdf.format(new Date())
     sdf.setTimeZone(TimeZone.getTimeZone("Asia/Tokyo"))
     val fileName = String.format(logPath + FILE_NAME, timeStamp)
